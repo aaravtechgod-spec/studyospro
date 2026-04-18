@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Send, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { v4 as uuid } from "uuid";
+const uuid = () => crypto.randomUUID();
 
 type Msg = { role: "user" | "assistant"; content: string };
 
