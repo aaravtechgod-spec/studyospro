@@ -32,6 +32,12 @@ export default function AppLayout() {
     if (!loading && !user) navigate("/auth", { replace: true });
   }, [user, loading, navigate]);
 
+  useEffect(() => {
+    if (profile?.theme) {
+      document.documentElement.classList.toggle("light", profile.theme === "light");
+    }
+  }, [profile?.theme]);
+
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
