@@ -22,16 +22,22 @@ export default function Subjects() {
 
   const create = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("Not signed in");
       if (!name.trim()) throw new Error("Name required");
-      await supabase.from("subjects").insert({ user_id: user!.id, name: name.trim(), color });
+      const { error } = await supabase.from("subjects").insert({ user_id: user.id, name: name.trim(), color });
+      if (error) throw error;
     },
     onSuccess: () => { setName(""); qc.invalidateQueries({ queryKey: ["subjects"] }); toast.success("Subject added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message ?? "Failed to add subject"),
   });
 
   const remove = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("subjects").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("subjects").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["subjects"] }),
+    onError: (e: any) => toast.error(e.message ?? "Failed to delete"),
   });
 
   return (

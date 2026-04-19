@@ -25,26 +25,36 @@ export default function Notes() {
 
   const create = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("Not signed in");
       if (!title.trim()) throw new Error("Title required");
       const tags = tagsStr.split(",").map(s => s.trim()).filter(Boolean);
-      await supabase.from("notes").insert({ user_id: user!.id, title, content, tags });
+      const { error } = await supabase.from("notes").insert({ user_id: user.id, title, content, tags });
+      if (error) throw error;
     },
     onSuccess: () => {
       setTitle(""); setContent(""); setTagsStr(""); setAdding(false);
       qc.invalidateQueries({ queryKey: ["notes"] });
       toast.success("Note saved");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message ?? "Failed to save"),
   });
 
   const remove = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("notes").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("notes").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["notes"] }); setOpenId(null); },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const update = useMutation({
-    mutationFn: async (n: any) => { await supabase.from("notes").update({ title: n.title, content: n.content }).eq("id", n.id); },
+    mutationFn: async (n: any) => {
+      const { error } = await supabase.from("notes").update({ title: n.title, content: n.content }).eq("id", n.id);
+      if (error) throw error;
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["notes"] }); toast.success("Updated"); },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const filtered = notes.filter((n: any) =>
