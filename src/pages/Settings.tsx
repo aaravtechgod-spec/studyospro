@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import ImportStudyOS from "@/components/ImportStudyOS";
 
 const THEMES = [
   { id: "dark", label: "StudyOS Dark", desc: "Default — black + lime" },
@@ -73,6 +74,10 @@ export default function Settings() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="mb-5">
+        <ImportStudyOS />
       </div>
 
       <div className="surface p-5">
