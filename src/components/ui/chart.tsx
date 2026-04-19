@@ -1,5 +1,12 @@
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
+import type { LegendPayload as RechartsLegendPayload } from "recharts/types/component/DefaultLegendContent";
+import type {
+  NameType as RechartsNameType,
+  Payload as RechartsTooltipPayload,
+  ValueType as RechartsValueType,
+} from "recharts/types/component/DefaultTooltipContent";
+import type { TooltipContentProps as RechartsTooltipContentProps } from "recharts/types/component/Tooltip";
 
 import { cn } from "@/lib/utils";
 
@@ -89,9 +96,18 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+type ChartTooltipPayload = RechartsTooltipPayload<RechartsValueType, RechartsNameType>;
+type ChartTooltipContentProps = RechartsTooltipContentProps<RechartsValueType, RechartsNameType>;
+type ChartLegendContentProps = React.ComponentProps<"div"> & {
+  payload?: ReadonlyArray<RechartsLegendPayload>;
+  verticalAlign?: "top" | "bottom" | "middle";
+  hideIcon?: boolean;
+  nameKey?: string;
+};
+
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+  ChartTooltipContentProps &
     React.ComponentProps<"div"> & {
       hideLabel?: boolean;
       hideIndicator?: boolean;
@@ -229,11 +245,7 @@ const ChartLegend = RechartsPrimitive.Legend;
 
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> &
-    Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
-      hideIcon?: boolean;
-      nameKey?: string;
-    }
+  ChartLegendContentProps
 >(({ className, hideIcon = false, payload, verticalAlign = "bottom", nameKey }, ref) => {
   const { config } = useChart();
 
@@ -275,7 +287,7 @@ const ChartLegendContent = React.forwardRef<
 ChartLegendContent.displayName = "ChartLegend";
 
 // Helper to extract item config from a payload.
-function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key: string) {
+function getPayloadConfigFromPayload(config: ChartConfig, payload: ChartTooltipPayload | RechartsLegendPayload, key: string) {
   if (typeof payload !== "object" || payload === null) {
     return undefined;
   }
