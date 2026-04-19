@@ -56,36 +56,49 @@ export default function Flashcards() {
 
   const createDeck = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("Not signed in");
       if (!newDeckName.trim()) throw new Error("Name required");
-      await supabase.from("decks").insert({ user_id: user!.id, name: newDeckName.trim() });
+      const { error } = await supabase.from("decks").insert({ user_id: user.id, name: newDeckName.trim() });
+      if (error) throw error;
     },
     onSuccess: () => { setNewDeckName(""); qc.invalidateQueries({ queryKey: ["decks"] }); toast.success("Deck created"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const removeDeck = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("decks").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("decks").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["decks"] }),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const addCard = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("Not signed in");
       if (!front.trim() || !back.trim()) throw new Error("Both sides required");
-      await supabase.from("flashcards").insert({ user_id: user!.id, deck_id: activeDeck!, front, back });
+      const { error } = await supabase.from("flashcards").insert({ user_id: user.id, deck_id: activeDeck!, front, back });
+      if (error) throw error;
     },
     onSuccess: () => { setFront(""); setBack(""); qc.invalidateQueries({ queryKey: ["cards"] }); qc.invalidateQueries({ queryKey: ["due-cards"] }); toast.success("Card added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const removeCard = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("flashcards").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("flashcards").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const review = useMutation({
     mutationFn: async ({ card, quality }: { card: any; quality: number }) => {
       const next = sm2(card, quality);
-      await supabase.from("flashcards").update(next).eq("id", card.id);
+      const { error } = await supabase.from("flashcards").update(next).eq("id", card.id);
+      if (error) throw error;
       if (quality >= 3) await addXp.mutateAsync(5);
     },
     onSuccess: () => {
@@ -100,6 +113,7 @@ export default function Flashcards() {
         setStudyIdx(i => i + 1);
       }
     },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   // STUDY MODE

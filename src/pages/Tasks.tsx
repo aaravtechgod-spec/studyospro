@@ -61,7 +61,8 @@ export default function Tasks({ mode = "homework" }: Props) {
 
   const complete = useMutation({
     mutationFn: async (t: any) => {
-      await supabase.from("tasks").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", t.id);
+      const { error } = await supabase.from("tasks").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", t.id);
+      if (error) throw error;
       await addXp.mutateAsync(t.xp_reward ?? 10);
     },
     onSuccess: (_, t: any) => {
@@ -69,11 +70,16 @@ export default function Tasks({ mode = "homework" }: Props) {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard-tasks"] });
     },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const remove = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("tasks").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tasks").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onError: (e: any) => toast.error(e.message ?? "Failed to delete"),
   });
 
   const isExam = mode === "exams";

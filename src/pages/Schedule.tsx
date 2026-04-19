@@ -36,15 +36,17 @@ export default function Schedule() {
 
   const create = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("Not signed in");
       if (!form.title || !form.start_time || !form.end_time) throw new Error("Fill all fields");
-      await supabase.from("events").insert({
-        user_id: user!.id,
+      const { error } = await supabase.from("events").insert({
+        user_id: user.id,
         title: form.title,
         start_time: new Date(form.start_time).toISOString(),
         end_time: new Date(form.end_time).toISOString(),
         event_type: form.event_type,
         subject_id: form.subject_id || null,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       setAdding(false);
@@ -53,12 +55,16 @@ export default function Schedule() {
       qc.invalidateQueries({ queryKey: ["dashboard-events"] });
       toast.success("Event added");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const remove = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("events").delete().eq("id", id); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("events").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
