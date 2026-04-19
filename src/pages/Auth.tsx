@@ -4,6 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address").max(255),
+  password: z.string().min(6, "Password must be at least 6 characters").max(72),
+  displayName: z.string().trim().max(50).optional(),
+});
 
 export default function Auth() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -11,8 +18,32 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const resendConfirmation = async () => {
+    const parsedEmail = z.string().trim().email("Enter a valid email address").safeParse(email);
+    if (!parsedEmail.success) {
+      toast.error(parsedEmail.error.issues[0]?.message ?? "Enter a valid email address");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: parsedEmail.data,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      toast.success("Confirmation email sent — check your inbox and spam folder.");
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not resend confirmation email");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) navigate("/", { replace: true });
@@ -20,25 +51,42 @@ export default function Auth() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const parsed = authSchema.safeParse({ email, password, displayName });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Check your details and try again");
+      return;
+    }
+
+    const cleanEmail = parsed.data.email;
+    const cleanPassword = parsed.data.password;
+    const cleanDisplayName = parsed.data.displayName?.trim();
+
     setLoading(true);
     try {
       if (mode === "signup") {
+        setNeedsConfirmation(true);
         const { error } = await supabase.auth.signUp({
-          email, password,
+          email: cleanEmail, password: cleanPassword,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { display_name: displayName || email.split("@")[0] },
+            data: { display_name: cleanDisplayName || cleanEmail.split("@")[0] },
           },
         });
         if (error) throw error;
-        toast.success("Welcome to StudyOS!");
+        toast.success("Account created — confirm your email before signing in.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPassword });
         if (error) throw error;
+        setNeedsConfirmation(false);
         toast.success("Logged in");
       }
     } catch (err: any) {
-      toast.error(err.message ?? "Authentication failed");
+      if (err?.message === "Email not confirmed") {
+        setNeedsConfirmation(true);
+        toast.error("Your email is correct, but you still need to confirm it from your inbox.");
+      } else {
+        toast.error(err.message ?? "Authentication failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -79,6 +127,19 @@ export default function Auth() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signin" && needsConfirmation && (
+              <div className="rounded-md border border-border bg-surface-2 p-3 text-sm text-muted-foreground">
+                <p className="mb-2">Your email address is valid, but the account is still waiting for email confirmation.</p>
+                <button
+                  type="button"
+                  onClick={resendConfirmation}
+                  disabled={loading}
+                  className="font-semibold text-primary transition-colors hover:text-primary-glow disabled:opacity-50"
+                >
+                  Resend confirmation email
+                </button>
+              </div>
+            )}
             {mode === "signup" && (
               <div>
                 <label className="label-mono block mb-1.5">Display name</label>
