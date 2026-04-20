@@ -45,6 +45,20 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid payload" }), { status: 400, headers: corsHeaders });
     }
 
+    // Hard caps to prevent DoS via oversized imports.
+    const MAX_ITEMS = 1000;
+    const arrayFields = ["subjects", "homework", "exams", "notes", "flashcards", "schedule", "sessions"];
+    for (const f of arrayFields) {
+      if (Array.isArray(S[f]) && S[f].length > MAX_ITEMS) {
+        return new Response(
+          JSON.stringify({ error: `Too many items in '${f}' (max ${MAX_ITEMS})` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+    // Clamp text length helper
+    const clamp = (v: any, n: number) => (typeof v === "string" ? v.slice(0, n) : v);
+
     const counts = { subjects: 0, tasks: 0, exams: 0, notes: 0, decks: 0, flashcards: 0, events: 0, sessions: 0 };
     const subjectMap = new Map<string | number, string>(); // legacy id -> new uuid
 
@@ -178,12 +192,19 @@ Deno.serve(async (req) => {
       counts.sessions = data!.length;
     }
 
-    // 8. PROFILE — XP, level, streak, display name
+    // 8. PROFILE — clamp game stats to safe ranges; never trust file values blindly.
+    const MAX_XP = 1_000_000;
+    const MAX_LEVEL = 100;
+    const MAX_STREAK = 3650; // ~10 years
     const profileUpdate: any = {};
-    if (typeof S.xp === "number") profileUpdate.xp = S.xp;
-    if (typeof S.level === "number") profileUpdate.level = S.level;
-    if (typeof S.streak === "number") profileUpdate.streak_days = S.streak;
-    if (S.profile?.name && S.profile.name !== "Student") profileUpdate.display_name = S.profile.name;
+    if (typeof S.xp === "number" && Number.isFinite(S.xp))
+      profileUpdate.xp = Math.max(0, Math.min(Math.floor(S.xp), MAX_XP));
+    if (typeof S.level === "number" && Number.isFinite(S.level))
+      profileUpdate.level = Math.max(1, Math.min(Math.floor(S.level), MAX_LEVEL));
+    if (typeof S.streak === "number" && Number.isFinite(S.streak))
+      profileUpdate.streak_days = Math.max(0, Math.min(Math.floor(S.streak), MAX_STREAK));
+    if (S.profile?.name && S.profile.name !== "Student")
+      profileUpdate.display_name = clamp(String(S.profile.name), 50);
     if (Object.keys(profileUpdate).length) {
       await supabase.from("profiles").update(profileUpdate).eq("user_id", user.id);
     }

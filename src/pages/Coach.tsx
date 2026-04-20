@@ -38,15 +38,18 @@ export default function Coach() {
     await supabase.from("ai_messages").insert({ user_id: user!.id, conversation_id: conversationId, role: "user", content: userMsg.content });
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Please sign in again"); setStreaming(false); return; }
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ messages: [...messages, userMsg] }),
       });
+      if (resp.status === 401) { toast.error("Session expired. Please sign in again."); setStreaming(false); return; }
 
       if (resp.status === 429) { toast.error("Rate limit. Wait a moment."); setStreaming(false); return; }
       if (resp.status === 402) { toast.error("AI credits exhausted. Add credits in workspace settings."); setStreaming(false); return; }
