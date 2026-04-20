@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useAddXp } from "@/hooks/useProfile";
+import { useAwardXp } from "@/hooks/useProfile";
 import { PageHeader, EmptyState } from "@/components/ui-kit";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { useState } from "react";
@@ -13,7 +13,7 @@ interface Props { mode?: "homework" | "exams"; }
 export default function Tasks({ mode = "homework" }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const addXp = useAddXp();
+  const awardXp = useAwardXp();
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [due, setDue] = useState("");
@@ -63,10 +63,12 @@ export default function Tasks({ mode = "homework" }: Props) {
     mutationFn: async (t: any) => {
       const { error } = await supabase.from("tasks").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", t.id);
       if (error) throw error;
-      await addXp.mutateAsync(t.xp_reward ?? 10);
+      // Server decides the XP amount based on the task itself.
+      const result = await awardXp.mutateAsync({ event_type: "task_complete", ref_id: t.id });
+      return result;
     },
-    onSuccess: (_, t: any) => {
-      toast.success(`+${t.xp_reward ?? 10} XP`);
+    onSuccess: (result) => {
+      toast.success(`Task complete! XP: ${result?.xp ?? "+"}`);
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard-tasks"] });
     },

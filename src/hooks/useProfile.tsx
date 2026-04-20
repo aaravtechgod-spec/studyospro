@@ -39,27 +39,25 @@ export const useProfile = () => {
   });
 };
 
-export const useAddXp = () => {
-  const { user } = useAuth();
+// Server-authoritative XP. The client never picks the amount —
+// it just tells the server which event happened, and the award_xp RPC
+// (SECURITY DEFINER) decides how much XP to grant.
+export type XpEvent =
+  | { event_type: "task_complete"; ref_id: string }
+  | { event_type: "flashcard_review" }
+  | { event_type: "focus_session"; ref_id: string };
+
+export const useAwardXp = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (amount: number) => {
-      const { data: profile } = await supabase
-        .from("profiles").select("xp, level, last_active_date, streak_days")
-        .eq("user_id", user!.id).maybeSingle();
-      if (!profile) return;
-      const newXp = profile.xp + amount;
-      const newLevel = levelFromXp(newXp);
-      const today = new Date().toISOString().slice(0, 10);
-      const last = profile.last_active_date;
-      let newStreak = profile.streak_days;
-      if (last !== today) {
-        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-        newStreak = last === yesterday ? profile.streak_days + 1 : 1;
-      }
-      await supabase.from("profiles").update({
-        xp: newXp, level: newLevel, last_active_date: today, streak_days: newStreak,
-      }).eq("user_id", user!.id);
+    mutationFn: async (event: XpEvent) => {
+      const { data, error } = await supabase.rpc("award_xp", {
+        _event_type: event.event_type,
+        _ref_id: "ref_id" in event ? event.ref_id : null,
+      } as any);
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return row as { xp: number; level: number; streak_days: number } | null;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
   });
