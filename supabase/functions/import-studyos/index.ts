@@ -192,17 +192,10 @@ Deno.serve(async (req) => {
       counts.sessions = data!.length;
     }
 
-    // 8. PROFILE — clamp game stats to safe ranges; never trust file values blindly.
-    const MAX_XP = 1_000_000;
-    const MAX_LEVEL = 100;
-    const MAX_STREAK = 3650; // ~10 years
+    // 8. PROFILE — only update non-game-stat fields. xp/level/streak_days are
+    // server-managed via the award_xp RPC and protected by a database trigger,
+    // so imported files cannot set arbitrary game stats.
     const profileUpdate: any = {};
-    if (typeof S.xp === "number" && Number.isFinite(S.xp))
-      profileUpdate.xp = Math.max(0, Math.min(Math.floor(S.xp), MAX_XP));
-    if (typeof S.level === "number" && Number.isFinite(S.level))
-      profileUpdate.level = Math.max(1, Math.min(Math.floor(S.level), MAX_LEVEL));
-    if (typeof S.streak === "number" && Number.isFinite(S.streak))
-      profileUpdate.streak_days = Math.max(0, Math.min(Math.floor(S.streak), MAX_STREAK));
     if (S.profile?.name && S.profile.name !== "Student")
       profileUpdate.display_name = clamp(String(S.profile.name), 50);
     if (Object.keys(profileUpdate).length) {
