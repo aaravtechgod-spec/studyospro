@@ -263,6 +263,14 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_board: string
+          ai_class: string
+          ai_curriculum: string
+          ai_difficulty: string
+          ai_focus_subjects: string[]
+          ai_image_gen: boolean
+          ai_tone: string
+          ai_web_search: boolean
           avatar_url: string | null
           created_at: string
           display_name: string | null
@@ -277,6 +285,14 @@ export type Database = {
           xp: number
         }
         Insert: {
+          ai_board?: string
+          ai_class?: string
+          ai_curriculum?: string
+          ai_difficulty?: string
+          ai_focus_subjects?: string[]
+          ai_image_gen?: boolean
+          ai_tone?: string
+          ai_web_search?: boolean
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -291,6 +307,14 @@ export type Database = {
           xp?: number
         }
         Update: {
+          ai_board?: string
+          ai_class?: string
+          ai_curriculum?: string
+          ai_difficulty?: string
+          ai_focus_subjects?: string[]
+          ai_image_gen?: boolean
+          ai_tone?: string
+          ai_web_search?: boolean
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -388,6 +412,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      timer_presets: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          minutes: number
+          session_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          minutes: number
+          session_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          minutes?: number
+          session_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
