@@ -6,18 +6,50 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are StudyOS Coach — an elite, encouraging, no-fluff academic tutor for students.
-- Explain concepts step-by-step with concrete examples.
-- When asked to summarize notes or create flashcards, format clearly using markdown lists.
-- Use Socratic questions when the student seems unsure.
-- Be concise. Prefer bullet points and short paragraphs. Use code blocks for formulas/code.
-- Celebrate progress briefly when relevant.`;
+function buildSystemPrompt(p: any, opts: { webSearch: boolean; imageGen: boolean }) {
+  const board = p?.ai_board ?? "CBSE";
+  const klass = p?.ai_class ?? "Class 10";
+  const curriculum = p?.ai_curriculum ?? "NCERT";
+  const difficulty = p?.ai_difficulty ?? "medium";
+  const tone = p?.ai_tone ?? "friendly";
+  const subjects: string[] = Array.isArray(p?.ai_focus_subjects) ? p.ai_focus_subjects : [];
+
+  const toneLine =
+    tone === "strict" ? "Be strict, demanding, and exam-focused. No hand-holding." :
+    tone === "concise" ? "Be extremely concise. Bullets and short sentences only." :
+    tone === "socratic" ? "Use the Socratic method — guide with questions before giving answers." :
+    "Be encouraging, warm and clear.";
+
+  const diffLine =
+    difficulty === "easy" ? "Default explanation level: introductory, lots of examples." :
+    difficulty === "hard" ? "Default explanation level: advanced, assume strong fundamentals." :
+    difficulty === "exam" ? "Default explanation level: exam-grade rigor with mark-scheme style answers." :
+    "Default explanation level: standard textbook depth.";
+
+  return `You are StudyOS Coach — an elite academic tutor for students.
+
+STUDENT PROFILE
+- Board: ${board}
+- Class/Grade: ${klass}
+- Curriculum: ${curriculum}${curriculum === "NCERT" ? " (align answers with NCERT chapters and terminology)" : ""}
+- Focus subjects: ${subjects.length ? subjects.join(", ") : "general"}
+- ${diffLine}
+- ${toneLine}
+
+RULES
+- Step-by-step explanations with concrete examples.
+- Use markdown: bullets, headings, code/math blocks.
+- For derivations, show every step.
+- For MCQs/quizzes, include answer + 1-line reasoning.
+- Celebrate effort briefly when relevant.
+${opts.webSearch ? "- Web search is ENABLED — cite sources inline as [1], [2] when you use fresh facts." : ""}
+${opts.imageGen ? "- You MAY generate diagrams/images when they materially help understanding (anatomy, geometry, circuits). Don't generate decorative images." : "- Do NOT generate images."}`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Authenticate the caller — reject anonymous / anon-key-only requests.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -36,15 +68,44 @@ serve(async (req) => {
       });
     }
 
-    const { messages } = await req.json();
+    const body = await req.json();
+    const messages = body?.messages;
+    const overrideWebSearch: boolean | undefined = body?.web_search;
+    const overrideImageGen: boolean | undefined = body?.image_gen;
+
     if (!Array.isArray(messages) || messages.length === 0 || messages.length > 50) {
       return new Response(JSON.stringify({ error: "Invalid messages payload" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Load preferences
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("ai_board, ai_class, ai_curriculum, ai_difficulty, ai_tone, ai_focus_subjects, ai_web_search, ai_image_gen")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const webSearch = overrideWebSearch ?? !!profile?.ai_web_search;
+    const imageGen = overrideImageGen ?? (profile?.ai_image_gen ?? true);
+    const systemPrompt = buildSystemPrompt(profile ?? {}, { webSearch, imageGen });
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    // Pick model: image-capable if image gen is on, otherwise fast text model.
+    const model = imageGen ? "google/gemini-3.1-flash-image-preview" : "google/gemini-3-flash-preview";
+
+    const payload: any = {
+      model,
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      stream: true,
+    };
+    if (imageGen) payload.modalities = ["image", "text"];
+    if (webSearch) {
+      // Gemini google_search grounding
+      payload.tools = [{ type: "google_search" }];
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -52,11 +113,7 @@ serve(async (req) => {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
-        stream: true,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

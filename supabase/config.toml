@@ -2,3 +2,6 @@ project_id = "olihxyxeqvppxmyxbrbx"
 
 [functions.ai-coach]
 verify_jwt = true
+
+[functions.notes-ai]
+verify_jwt = true
