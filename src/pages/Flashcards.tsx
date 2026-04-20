@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useAddXp } from "@/hooks/useProfile";
+import { useAwardXp } from "@/hooks/useProfile";
 import { PageHeader, EmptyState } from "@/components/ui-kit";
 import { useState } from "react";
 import { Plus, Trash2, ChevronLeft } from "lucide-react";
@@ -27,7 +27,7 @@ function sm2(card: any, quality: number) {
 export default function Flashcards() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const addXp = useAddXp();
+  const awardXp = useAwardXp();
   const [activeDeck, setActiveDeck] = useState<string | null>(null);
   const [studyMode, setStudyMode] = useState(false);
   const [studyIdx, setStudyIdx] = useState(0);
@@ -99,7 +99,7 @@ export default function Flashcards() {
       const next = sm2(card, quality);
       const { error } = await supabase.from("flashcards").update(next).eq("id", card.id);
       if (error) throw error;
-      if (quality >= 3) await addXp.mutateAsync(5);
+      if (quality >= 3) await awardXp.mutateAsync({ event_type: "flashcard_review" });
     },
     onSuccess: () => {
       setShowBack(false);

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/ui-kit";
 import { useAuth } from "@/hooks/useAuth";
-import { useAddXp } from "@/hooks/useProfile";
+import { useAwardXp } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Play, Pause, RotateCcw } from "lucide-react";
@@ -16,7 +16,7 @@ const PRESETS = [
 
 export default function Timer() {
   const { user } = useAuth();
-  const addXp = useAddXp();
+  const awardXp = useAwardXp();
   const [selected, setSelected] = useState(PRESETS[0]);
   const [secondsLeft, setSecondsLeft] = useState(PRESETS[0].min * 60);
   const [running, setRunning] = useState(false);
@@ -48,15 +48,16 @@ export default function Timer() {
 
   const handleComplete = async () => {
     if (selected.type === "focus") {
-      await supabase.from("focus_sessions").insert({
+      const { data: inserted, error: insErr } = await supabase.from("focus_sessions").insert({
         user_id: user!.id,
         duration_minutes: selected.min,
         session_type: "focus",
         subject_id: subjectId || null,
-      });
-      const xp = selected.min * 2;
-      await addXp.mutateAsync(xp);
-      toast.success(`Session complete! +${xp} XP`, { description: `${selected.min} minutes of focused work` });
+      }).select("id").single();
+      if (insErr) { toast.error(insErr.message); return; }
+      // Server computes XP from the focus session it just verified belongs to this user.
+      const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted!.id });
+      toast.success(`Session complete!`, { description: `${selected.min} min focus · Total XP: ${result?.xp ?? ""}` });
     } else {
       toast.success("Break done!");
     }
