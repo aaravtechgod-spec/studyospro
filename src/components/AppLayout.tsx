@@ -1,11 +1,17 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, xpForLevel } from "@/hooks/useProfile";
 import { useEffect, useState } from "react";
 import {
   LayoutGrid, Calendar, ListChecks, FileText, Timer, CalendarDays,
-  GraduationCap, Layers, Brain, Bot, Trophy, BarChart3, Settings, LogOut, Menu, X
+  GraduationCap, Layers, Brain, Bot, Trophy, BarChart3, Settings, LogOut, Menu, X, Sparkles
 } from "lucide-react";
+import { CoachChatProvider, useCoachChat } from "@/hooks/useCoachChat";
+import CoachPanel from "@/components/CoachPanel";
+
+// Routes where the floating "Ask Coach" button is shown.
+// (On /coach itself the full-page chat already exists.)
+const COACH_ROUTES = ["/notes", "/tasks", "/exams", "/timer"];
 
 const navItems = [
   { to: "/", icon: LayoutGrid, label: "Dashboard", end: true },
@@ -23,10 +29,20 @@ const navItems = [
 ];
 
 export default function AppLayout() {
+  return (
+    <CoachChatProvider>
+      <AppLayoutInner />
+    </CoachChatProvider>
+  );
+}
+
+function AppLayoutInner() {
   const { user, loading, signOut } = useAuth();
   const { data: profile } = useProfile();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { sidebarOpen, openSidebar, setContext } = useCoachChat();
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth", { replace: true });
@@ -37,6 +53,14 @@ export default function AppLayout() {
       document.documentElement.classList.toggle("light", profile.theme === "light");
     }
   }, [profile?.theme]);
+
+  // Tell the coach which page the user is on, so the conversation has light context.
+  useEffect(() => {
+    const map: Record<string, string> = {
+      "/notes": "Notes", "/tasks": "Homework", "/exams": "Exams", "/timer": "Study Timer",
+    };
+    setContext(map[location.pathname] ?? null);
+  }, [location.pathname, setContext]);
 
   if (loading || !user) {
     return (
@@ -51,6 +75,8 @@ export default function AppLayout() {
   const xpThis = xp - xpForLevel(level - 1);
   const xpNeed = xpForLevel(level) - xpForLevel(level - 1);
   const pct = Math.min(100, Math.round((xpThis / xpNeed) * 100));
+
+  const showCoachLauncher = COACH_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r + "/"));
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -141,6 +167,20 @@ export default function AppLayout() {
       <main className="flex-1 min-w-0 p-5 md:p-8 max-w-[1400px] mx-auto w-full">
         <Outlet />
       </main>
+
+      {/* Floating Coach launcher (Notes / Tasks / Timer) */}
+      {showCoachLauncher && !sidebarOpen && (
+        <button
+          onClick={openSidebar}
+          className="fixed bottom-5 right-5 z-40 bg-primary text-primary-foreground rounded-full shadow-xl shadow-primary/30 px-4 py-3 flex items-center gap-2 font-semibold text-sm hover:bg-primary-glow transition-colors"
+          aria-label="Open AI Coach"
+        >
+          <Sparkles className="w-4 h-4" />
+          Ask Coach
+        </button>
+      )}
+
+      <CoachPanel />
     </div>
   );
 }
