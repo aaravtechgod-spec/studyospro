@@ -93,15 +93,27 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Pick model: image-capable if image gen is on, otherwise fast text model.
-    const model = imageGen ? "google/gemini-3.1-flash-image-preview" : "google/gemini-3-flash-preview";
+    // Detect if user is asking for an image in latest message — only then use image model.
+    const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
+    const lastUserText = typeof lastUser?.content === "string"
+      ? lastUser.content
+      : Array.isArray(lastUser?.content)
+        ? lastUser.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join(" ")
+        : "";
+    const wantsImage = imageGen && /\b(draw|diagram|sketch|illustrate|generate (an? )?image|picture of|visualize|show me a picture)\b/i.test(lastUserText);
+    const hasImageInput = Array.isArray(lastUser?.content) && lastUser.content.some((p: any) => p.type === "image_url");
+
+    // Use image-capable model when generating OR when user attached images. Otherwise fast text.
+    const model = (wantsImage || hasImageInput)
+      ? "google/gemini-2.5-flash-image"
+      : "google/gemini-3-flash-preview";
 
     const payload: any = {
       model,
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     };
-    if (imageGen) payload.modalities = ["image", "text"];
+    if (wantsImage) payload.modalities = ["image", "text"];
     if (webSearch) {
       // Gemini google_search grounding
       payload.tools = [{ type: "google_search" }];
