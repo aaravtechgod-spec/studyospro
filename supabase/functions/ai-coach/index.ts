@@ -103,10 +103,15 @@ serve(async (req) => {
     const wantsImage = imageGen && /\b(draw|diagram|sketch|illustrate|generate (an? )?image|picture of|visualize|show me a picture)\b/i.test(lastUserText);
     const hasImageInput = Array.isArray(lastUser?.content) && lastUser.content.some((p: any) => p.type === "image_url");
 
-    // Use image-capable model when generating OR when user attached images. Otherwise fast text.
+    // Model selection:
+    // - image gen / vision => image model
+    // - web search (google_search tool) => gemini-2.5-flash (tool-use supported)
+    // - otherwise => fast preview
     const model = (wantsImage || hasImageInput)
       ? "google/gemini-2.5-flash-image"
-      : "google/gemini-3-flash-preview";
+      : webSearch
+        ? "google/gemini-2.5-flash"
+        : "google/gemini-3-flash-preview";
 
     const payload: any = {
       model,
