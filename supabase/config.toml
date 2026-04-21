@@ -1,7 +1,10 @@
 project_id = "olihxyxeqvppxmyxbrbx"
 
 [functions.ai-coach]
-verify_jwt = true
+verify_jwt = false
 
 [functions.notes-ai]
-verify_jwt = true
+verify_jwt = false
+
+[functions.import-studyos]
+verify_jwt = false
