@@ -1,11 +1,17 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, xpForLevel } from "@/hooks/useProfile";
 import { useEffect, useState } from "react";
 import {
   LayoutGrid, Calendar, ListChecks, FileText, Timer, CalendarDays,
-  GraduationCap, Layers, Brain, Bot, Trophy, BarChart3, Settings, LogOut, Menu, X
+  GraduationCap, Layers, Brain, Bot, Trophy, BarChart3, Settings, LogOut, Menu, X, Sparkles
 } from "lucide-react";
+import { CoachChatProvider, useCoachChat } from "@/hooks/useCoachChat";
+import CoachPanel from "@/components/CoachPanel";
+
+// Routes where the floating "Ask Coach" button is shown.
+// (On /coach itself the full-page chat already exists.)
+const COACH_ROUTES = ["/notes", "/tasks", "/exams", "/timer"];
 
 const navItems = [
   { to: "/", icon: LayoutGrid, label: "Dashboard", end: true },
