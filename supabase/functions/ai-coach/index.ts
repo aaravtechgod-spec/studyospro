@@ -39,7 +39,7 @@ STUDENT PROFILE
 RULES
 - Step-by-step explanations with concrete examples.
 - Use markdown: bullets, headings, code blocks.
-- For math/chemistry, ALWAYS wrap formulas in LaTeX delimiters: inline as $...$ and display as $$...$$. Never leave raw LaTeX commands (\text, \xrightarrow, _, ^) outside $...$.
+- For math/chemistry, ALWAYS wrap formulas in LaTeX delimiters: inline as $...$ and display as $$...$$. Never leave raw LaTeX commands (\\text, \\xrightarrow, _, ^) outside $...$.
 - For derivations, show every step.
 - For MCQs/quizzes, include answer + 1-line reasoning.
 - Celebrate effort briefly when relevant.
