@@ -1,17 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { PageHeader, EmptyState } from "@/components/ui-kit";
+import { PageHeader, EmptyState, SkeletonRow } from "@/components/ui-kit";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2, Search, Eye, Edit3, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Plus, Trash2, Search, Eye, Edit3, Image as ImageIcon, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import Markdown from "@/components/Markdown";
 import NotesAIPanel from "@/components/NotesAIPanel";
+import MarkdownToolbar from "@/components/MarkdownToolbar";
+import { useCoachChat } from "@/hooks/useCoachChat";
 
 export default function Notes() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { setPageContext } = useCoachChat();
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -21,9 +24,10 @@ export default function Notes() {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
   const saveTimer = useRef<number | null>(null);
 
-  const { data: notes = [] } = useQuery({
+  const { data: notes = [], isLoading: notesLoading } = useQuery({
     queryKey: ["notes", user?.id],
     enabled: !!user,
     queryFn: async () => (await supabase.from("notes").select("*").eq("user_id", user!.id).order("updated_at", { ascending: false })).data ?? [],
@@ -37,7 +41,6 @@ export default function Notes() {
 
   const open = openId ? (notes as any[]).find(n => n.id === openId) : null;
 
-  // Sync local editor state when opening a note
   useEffect(() => {
     if (open) {
       setTitle(open.title ?? "");
@@ -48,21 +51,24 @@ export default function Notes() {
     }
   }, [openId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Inject the open note into the Coach context so "summarize this" works.
+  useEffect(() => {
+    if (!open) { setPageContext(null); return; }
+    const snippet = (content || "").slice(0, 4000);
+    setPageContext(`Notes — Title: "${title}"\n\n${snippet}`);
+    return () => setPageContext(null);
+  }, [openId, title, content, setPageContext]);
+
   const create = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Not signed in");
       const { data, error } = await supabase.from("notes").insert({
-        user_id: user.id,
-        title: "Untitled note",
-        content: "",
+        user_id: user.id, title: "Untitled note", content: "",
       }).select("id").single();
       if (error) throw error;
       return data.id as string;
     },
-    onSuccess: (id) => {
-      qc.invalidateQueries({ queryKey: ["notes"] });
-      setOpenId(id);
-    },
+    onSuccess: (id) => { qc.invalidateQueries({ queryKey: ["notes"] }); setOpenId(id); },
     onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
@@ -79,16 +85,12 @@ export default function Notes() {
     if (!open) return;
     const tags = tagsStr.split(",").map(s => s.trim()).filter(Boolean);
     const { error } = await supabase.from("notes").update({
-      title: title || "Untitled",
-      content,
-      tags,
-      subject_id: subjectId || null,
+      title: title || "Untitled", content, tags, subject_id: subjectId || null,
     }).eq("id", open.id);
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["notes"] });
   };
 
-  // Debounced autosave
   useEffect(() => {
     if (!open) return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
@@ -107,8 +109,7 @@ export default function Notes() {
       const { error } = await supabase.storage.from("note-images").upload(path, file, { contentType: file.type });
       if (error) throw error;
       const { data } = supabase.storage.from("note-images").getPublicUrl(path);
-      const md = `\n![image](${data.publicUrl})\n`;
-      setContent(c => c + md);
+      setContent(c => c + `\n![image](${data.publicUrl})\n`);
       toast.success("Image inserted");
     } catch (e: any) {
       toast.error(e.message ?? "Upload failed");
@@ -138,7 +139,6 @@ export default function Notes() {
       />
 
       <div className="grid lg:grid-cols-[280px_1fr_320px] gap-4">
-        {/* Left: list */}
         <div className="space-y-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -146,7 +146,19 @@ export default function Notes() {
               className="w-full bg-surface border border-border rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-primary" />
           </div>
           <div className="space-y-1.5 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
-            {filtered.length === 0 && <EmptyState icon="📝" title="No notes" hint="Create your first note." />}
+            {notesLoading && Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
+            {!notesLoading && filtered.length === 0 && (
+              <EmptyState
+                icon={<FileText className="w-12 h-12" />}
+                title="No notes yet"
+                hint="Capture lectures, summarize chapters, or paste articles. AI tools live on the right."
+                action={
+                  <button onClick={() => create.mutate()} className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2 mx-auto">
+                    <Plus className="w-4 h-4" /> Create your first note
+                  </button>
+                }
+              />
+            )}
             {filtered.map((n: any) => (
               <button key={n.id} onClick={() => setOpenId(n.id)}
                 className={`w-full text-left p-3 rounded-md border transition-colors ${openId === n.id ? "border-primary bg-primary/5" : "border-border bg-surface hover:border-primary/50"}`}>
@@ -158,7 +170,6 @@ export default function Notes() {
           </div>
         </div>
 
-        {/* Center: editor */}
         <div>
           {!open ? (
             <div className="surface p-12 text-center">
@@ -200,15 +211,16 @@ export default function Notes() {
               </div>
 
               {mode === "edit" ? (
-                <textarea value={content} onChange={e => setContent(e.target.value)} rows={20}
-                  className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:border-primary"
-                  placeholder="# Markdown supported
+                <>
+                  <MarkdownToolbar textareaRef={editorRef} value={content} onChange={setContent} />
+                  <textarea ref={editorRef} value={content} onChange={e => setContent(e.target.value)} rows={20}
+                    className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:border-primary"
+                    placeholder="# Markdown supported
 
-- Lists
-- **Bold** · *italic* · `code`
-- ![Insert images via the Image button](url)
-- $$inline math via code blocks$$"
-                />
+- Lists, **bold**, *italic*, `code`
+- $E = mc^2$ for inline math"
+                  />
+                </>
               ) : (
                 <div className="bg-surface-2 border border-border rounded-md p-4 min-h-[400px]">
                   {content ? <Markdown>{content}</Markdown> : <div className="text-muted-foreground text-sm italic">Nothing to preview yet.</div>}
@@ -219,7 +231,6 @@ export default function Notes() {
           )}
         </div>
 
-        {/* Right: AI */}
         <div className="space-y-3">
           <NotesAIPanel noteId={openId} onContentReplace={(md) => setContent(c => c + "\n\n" + md)} />
         </div>

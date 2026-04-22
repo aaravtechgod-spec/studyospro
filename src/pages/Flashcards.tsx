@@ -215,7 +215,20 @@ export default function Flashcards() {
       </div>
 
       {decks.length === 0 ? (
-        <EmptyState icon="🃏" title="No decks yet" hint="Create your first deck to start memorizing." />
+        <EmptyState
+          icon="🃏"
+          title="No decks yet"
+          hint="Create a deck per subject or chapter, then add cards. Spaced repetition does the rest."
+          action={
+            <div className="flex gap-2 justify-center">
+              <input value={newDeckName} onChange={e => setNewDeckName(e.target.value)} placeholder="Deck name"
+                className="bg-surface-2 border border-border rounded-md px-3 py-2 text-sm" />
+              <button onClick={() => createDeck.mutate()} className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Create
+              </button>
+            </div>
+          }
+        />
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {decks.map((d: any) => (
