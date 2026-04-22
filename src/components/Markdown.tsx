@@ -1,7 +1,16 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 export default function Markdown({ children }: { children: string }) {
+  // Normalize common AI math delimiters so remark-math picks them up:
+  // \( ... \) -> $...$ ; \[ ... \] -> $$...$$
+  const normalized = children
+    .replace(/\\\[(.+?)\\\]/gs, (_, e) => `$$${e}$$`)
+    .replace(/\\\((.+?)\\\)/gs, (_, e) => `$${e}$`);
+
   return (
     <div className="prose prose-invert prose-sm max-w-none
       prose-headings:font-display prose-headings:tracking-tight
@@ -14,7 +23,12 @@ export default function Markdown({ children }: { children: string }) {
       prose-strong:text-foreground
       prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
       prose-table:text-xs">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+      >
+        {normalized}
+      </ReactMarkdown>
     </div>
   );
 }
