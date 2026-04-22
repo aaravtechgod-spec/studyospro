@@ -2,19 +2,12 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useCoachChat } from "@/hooks/useCoachChat";
 import { useAIPrefs } from "@/hooks/useAIPrefs";
 import Markdown from "@/components/Markdown";
-import { Send, Sparkles, Trash2, Globe, Image as ImageIcon, Paperclip, X, Bot } from "lucide-react";
+import { Send, Sparkles, Trash2, Globe, Image as ImageIcon, Paperclip, X, Bot, Square, MessageSquarePlus, History } from "lucide-react";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageCompress";
 
 const MAX_ATTACH = 4;
-const MAX_BYTES = 5 * 1024 * 1024;
-
-const fileToDataUrl = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
+const MAX_BYTES = 10 * 1024 * 1024; // raw upload cap before compression
 
 const QUICK = [
   "Summarize what's on screen",
@@ -22,19 +15,50 @@ const QUICK = [
   "Explain this simply",
 ];
 
-/**
- * Floating side panel rendered by AppLayout on every page that opts in.
- * Uses the shared CoachChat context so conversation persists across routes.
- */
+const WIDTH_KEY = "coach.sidebar.width";
+const MIN_W = 340;
+const MAX_W = 720;
+
 export default function CoachPanel() {
-  const { messages, streaming, send, clear, webSearch, imageGen, setWebSearch, setImageGen, sidebarOpen, closeSidebar, context } = useCoachChat();
+  const {
+    messages, streaming, send, cancel, clear,
+    webSearch, imageGen, setWebSearch, setImageGen,
+    sidebarOpen, closeSidebar, context,
+    conversations, loadConversation, newConversation, deleteConversation, conversationId,
+  } = useCoachChat();
   const prefs = useAIPrefs();
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages, sidebarOpen]);
+  const [width, setWidth] = useState<number>(() => {
+    try { return Math.max(MIN_W, Math.min(MAX_W, parseInt(localStorage.getItem(WIDTH_KEY) || "420", 10))); }
+    catch { return 420; }
+  });
+  const draggingRef = useRef(false);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, sidebarOpen]);
+
+  useEffect(() => {
+    const move = (e: MouseEvent) => {
+      if (!draggingRef.current) return;
+      const next = Math.max(MIN_W, Math.min(MAX_W, window.innerWidth - e.clientX));
+      setWidth(next);
+    };
+    const up = () => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      document.body.style.cursor = "";
+      try { localStorage.setItem(WIDTH_KEY, String(width)); } catch {}
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+  }, [width]);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -44,8 +68,9 @@ export default function CoachPanel() {
     const next: string[] = [];
     for (const f of arr) {
       if (!f.type.startsWith("image/")) { toast.error(`${f.name}: not an image`); continue; }
-      if (f.size > MAX_BYTES) { toast.error(`${f.name}: over 5MB`); continue; }
-      try { next.push(await fileToDataUrl(f)); } catch { toast.error(`Could not read ${f.name}`); }
+      if (f.size > MAX_BYTES) { toast.error(`${f.name}: over 10MB`); continue; }
+      try { next.push(await compressImage(f)); }
+      catch { toast.error(`Could not read ${f.name}`); }
     }
     if (next.length) setAttachments(prev => [...prev, ...next]);
   };
@@ -63,17 +88,20 @@ export default function CoachPanel() {
 
   return (
     <>
-      {/* Mobile backdrop */}
-      <div
-        onClick={closeSidebar}
-        className="lg:hidden fixed inset-0 bg-black/50 z-40"
-        aria-hidden
-      />
+      <div onClick={closeSidebar} className="lg:hidden fixed inset-0 bg-black/50 z-40" aria-hidden />
       <aside
-        className="fixed top-0 right-0 z-50 h-screen w-full sm:w-[420px] bg-surface border-l border-border shadow-2xl flex flex-col"
+        className="fixed top-0 right-0 z-50 h-screen bg-surface border-l border-border shadow-2xl flex flex-col"
+        style={{ width: `min(100vw, ${width}px)` }}
         role="complementary"
         aria-label="AI Coach"
       >
+        {/* Drag handle (desktop) */}
+        <div
+          onMouseDown={() => { draggingRef.current = true; document.body.style.cursor = "ew-resize"; }}
+          className="hidden lg:block absolute left-0 top-0 h-full w-1 cursor-ew-resize hover:bg-primary/40 transition-colors"
+          title="Drag to resize"
+        />
+
         <header className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-8 h-8 rounded-md bg-primary/10 text-primary flex items-center justify-center">
@@ -87,8 +115,16 @@ export default function CoachPanel() {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <button onClick={() => setHistoryOpen(o => !o)} title="History"
+              className={`p-1.5 ${historyOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+              <History className="w-4 h-4" />
+            </button>
+            <button onClick={() => { newConversation(); setHistoryOpen(false); }} title="New chat"
+              className="p-1.5 text-muted-foreground hover:text-foreground">
+              <MessageSquarePlus className="w-4 h-4" />
+            </button>
             {messages.length > 0 && (
-              <button onClick={clear} title="Clear chat"
+              <button onClick={clear} title="Clear view"
                 className="p-1.5 text-muted-foreground hover:text-destructive">
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -99,6 +135,30 @@ export default function CoachPanel() {
             </button>
           </div>
         </header>
+
+        {historyOpen && (
+          <div className="border-b border-border max-h-60 overflow-y-auto bg-surface-2">
+            {conversations.length === 0 ? (
+              <div className="p-3 text-xs text-muted-foreground">No saved chats yet.</div>
+            ) : conversations.map(c => (
+              <div key={c.id} className={`flex items-center gap-1 px-3 py-2 border-b border-border/50 ${conversationId === c.id ? "bg-primary/10" : ""}`}>
+                <button
+                  onClick={() => { void loadConversation(c.id); setHistoryOpen(false); }}
+                  className="flex-1 text-left text-xs truncate hover:text-primary"
+                >
+                  {c.title}
+                </button>
+                <button
+                  onClick={() => deleteConversation(c.id)}
+                  className="p-1 text-muted-foreground hover:text-destructive"
+                  aria-label="Delete chat"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="px-4 py-2 border-b border-border flex items-center gap-2">
           <button onClick={() => setWebSearch(!webSearch)}
@@ -183,10 +243,18 @@ export default function CoachPanel() {
             placeholder={attachments.length ? "Ask about the image…" : "Ask the coach…"}
             disabled={streaming}
             className="flex-1 bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary disabled:opacity-50" />
-          <button type="submit" disabled={streaming || (!input.trim() && attachments.length === 0)}
-            className="bg-primary text-primary-foreground font-bold px-3 rounded-md disabled:opacity-50">
-            <Send className="w-4 h-4" />
-          </button>
+          {streaming ? (
+            <button type="button" onClick={cancel}
+              className="bg-destructive text-destructive-foreground font-bold px-3 rounded-md flex items-center"
+              aria-label="Stop">
+              <Square className="w-4 h-4" />
+            </button>
+          ) : (
+            <button type="submit" disabled={!input.trim() && attachments.length === 0}
+              className="bg-primary text-primary-foreground font-bold px-3 rounded-md disabled:opacity-50">
+              <Send className="w-4 h-4" />
+            </button>
+          )}
         </form>
       </aside>
     </>

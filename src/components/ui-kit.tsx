@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 export const PageHeader = ({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) => (
   <div className="flex flex-wrap items-end justify-between gap-4 mb-6 pb-5 border-b border-border">
@@ -27,10 +28,45 @@ export const StatCard = ({ label, value, hint, accent }: { label: string; value:
   );
 };
 
-export const EmptyState = ({ icon, title, hint }: { icon?: ReactNode; title: string; hint?: string }) => (
-  <div className="surface p-12 text-center">
-    {icon && <div className="text-4xl mb-3 opacity-50">{icon}</div>}
+export const EmptyState = ({
+  icon,
+  title,
+  hint,
+  action,
+}: {
+  icon?: ReactNode;
+  title: string;
+  hint?: string;
+  action?: ReactNode;
+}) => (
+  <div className="surface p-12 text-center flex flex-col items-center">
+    {icon && <div className="text-5xl mb-3 opacity-60 animate-fade-in">{icon}</div>}
     <div className="font-display font-bold text-lg">{title}</div>
-    {hint && <div className="text-muted-foreground text-sm mt-1">{hint}</div>}
+    {hint && <div className="text-muted-foreground text-sm mt-1 max-w-sm">{hint}</div>}
+    {action && <div className="mt-4">{action}</div>}
+  </div>
+);
+
+/** Quick skeleton primitives — no extra deps. */
+export const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn("animate-pulse bg-surface-2 rounded-md", className)} />
+);
+
+export const SkeletonRow = () => (
+  <div className="surface p-4 flex items-center gap-3">
+    <Skeleton className="w-6 h-6 rounded-full" />
+    <div className="flex-1 space-y-2">
+      <Skeleton className="h-3 w-2/3" />
+      <Skeleton className="h-2 w-1/3" />
+    </div>
+  </div>
+);
+
+export const SkeletonCard = ({ lines = 3 }: { lines?: number }) => (
+  <div className="surface p-5 space-y-2">
+    <Skeleton className="h-4 w-1/3" />
+    {Array.from({ length: lines }).map((_, i) => (
+      <Skeleton key={i} className="h-3 w-full" />
+    ))}
   </div>
 );

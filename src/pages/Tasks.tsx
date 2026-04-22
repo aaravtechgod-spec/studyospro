@@ -123,7 +123,16 @@ export default function Tasks({ mode = "homework" }: Props) {
       )}
 
       {tasks.length === 0 ? (
-        <EmptyState icon="📋" title="No tasks yet" hint="Click Add task to create your first one." />
+        <EmptyState
+          icon={isExam ? "📅" : "📋"}
+          title={isExam ? "No exams scheduled" : "No tasks yet"}
+          hint={isExam ? "Add upcoming tests so your dashboard knows what's coming." : "Stay on top of homework — add your first assignment."}
+          action={
+            <button onClick={() => setAdding(true)} className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2 mx-auto">
+              <Plus className="w-4 h-4" /> {isExam ? "Schedule first exam" : "Add first task"}
+            </button>
+          }
+        />
       ) : (
         <div className="space-y-2">
           {tasks.map((t: any) => {

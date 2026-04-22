@@ -3,8 +3,9 @@ import { PageHeader } from "@/components/ui-kit";
 import { useAIPrefs } from "@/hooks/useAIPrefs";
 import { useCoachChat } from "@/hooks/useCoachChat";
 import Markdown from "@/components/Markdown";
-import { Send, Sparkles, Trash2, Globe, Image as ImageIcon, Paperclip, X } from "lucide-react";
+import { Send, Sparkles, Trash2, Globe, Image as ImageIcon, Paperclip, X, Square, MessageSquarePlus, History } from "lucide-react";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageCompress";
 
 const SUGGESTIONS = [
   "Explain photosynthesis with a labeled diagram",
@@ -14,21 +15,18 @@ const SUGGESTIONS = [
 ];
 
 const MAX_ATTACH = 4;
-const MAX_BYTES = 5 * 1024 * 1024;
-
-const fileToDataUrl = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
+const MAX_BYTES = 10 * 1024 * 1024;
 
 export default function Coach() {
   const prefs = useAIPrefs();
-  const { messages, streaming, send, clear, webSearch, imageGen, setWebSearch, setImageGen } = useCoachChat();
+  const {
+    messages, streaming, send, cancel, clear,
+    webSearch, imageGen, setWebSearch, setImageGen,
+    conversations, loadConversation, newConversation, deleteConversation, conversationId,
+  } = useCoachChat();
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -42,8 +40,8 @@ export default function Coach() {
     const next: string[] = [];
     for (const f of arr) {
       if (!f.type.startsWith("image/")) { toast.error(`${f.name}: not an image`); continue; }
-      if (f.size > MAX_BYTES) { toast.error(`${f.name}: over 5MB`); continue; }
-      try { next.push(await fileToDataUrl(f)); } catch { toast.error(`Could not read ${f.name}`); }
+      if (f.size > MAX_BYTES) { toast.error(`${f.name}: over 10MB`); continue; }
+      try { next.push(await compressImage(f)); } catch { toast.error(`Could not read ${f.name}`); }
     }
     if (next.length) setAttachments(prev => [...prev, ...next]);
   };
@@ -63,7 +61,15 @@ export default function Coach() {
         title="🤖 AI Study Coach"
         subtitle={`${prefs.ai_board} · ${prefs.ai_class} · ${prefs.ai_curriculum}`}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => setHistoryOpen(o => !o)}
+              className={`text-xs px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 ${historyOpen ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2 text-muted-foreground"}`}>
+              <History className="w-3.5 h-3.5" /> History
+            </button>
+            <button onClick={newConversation}
+              className="text-xs px-2.5 py-1.5 rounded-md border border-border bg-surface-2 hover:border-primary/50 flex items-center gap-1.5">
+              <MessageSquarePlus className="w-3.5 h-3.5" /> New
+            </button>
             <button onClick={() => setWebSearch(!webSearch)}
               className={`text-xs px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 transition-colors ${webSearch ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2 text-muted-foreground"}`}>
               <Globe className="w-3.5 h-3.5" /> Web
@@ -81,6 +87,25 @@ export default function Coach() {
         }
       />
 
+      {historyOpen && (
+        <div className="surface mb-3 max-h-56 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <div className="p-3 text-xs text-muted-foreground">No saved chats yet.</div>
+          ) : conversations.map(c => (
+            <div key={c.id} className={`flex items-center gap-2 px-3 py-2 border-b border-border/50 ${conversationId === c.id ? "bg-primary/10" : ""}`}>
+              <button onClick={() => { void loadConversation(c.id); setHistoryOpen(false); }}
+                className="flex-1 text-left text-sm truncate hover:text-primary">
+                {c.title}
+              </button>
+              <button onClick={() => deleteConversation(c.id)}
+                className="p-1 text-muted-foreground hover:text-destructive" aria-label="Delete">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto surface p-5 space-y-4 mb-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center">
@@ -96,7 +121,7 @@ export default function Coach() {
               ))}
             </div>
             <p className="text-[10px] text-muted-foreground mt-6">
-              💡 Tip: this same conversation is also available as a side panel on Notes, Tasks &amp; Timer.
+              💡 Tip: this same conversation is also available as a side panel on Notes, Tasks &amp; Timer. Press ⌘K for quick actions.
             </p>
           </div>
         ) : (
@@ -163,10 +188,18 @@ export default function Coach() {
           placeholder={attachments.length ? "Add a question about the image…" : "Ask the coach…"}
           disabled={streaming}
           className="flex-1 bg-surface border border-border rounded-md px-4 py-3 text-sm focus:outline-none focus:border-primary disabled:opacity-50" />
-        <button type="submit" disabled={streaming || (!input.trim() && attachments.length === 0)}
-          className="bg-primary text-primary-foreground font-bold px-5 rounded-md disabled:opacity-50 flex items-center gap-2">
-          <Send className="w-4 h-4" />
-        </button>
+        {streaming ? (
+          <button type="button" onClick={cancel}
+            className="bg-destructive text-destructive-foreground font-bold px-5 rounded-md flex items-center gap-2"
+            aria-label="Stop generation">
+            <Square className="w-4 h-4" /> Stop
+          </button>
+        ) : (
+          <button type="submit" disabled={!input.trim() && attachments.length === 0}
+            className="bg-primary text-primary-foreground font-bold px-5 rounded-md disabled:opacity-50 flex items-center gap-2">
+            <Send className="w-4 h-4" />
+          </button>
+        )}
       </form>
     </div>
   );

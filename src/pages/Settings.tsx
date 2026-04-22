@@ -31,12 +31,11 @@ export default function Settings() {
     }
   }, [profile]);
 
-  const applyTheme = (theme: string) => {
+  const applyTheme = async (theme: string) => {
     document.documentElement.classList.toggle("light", theme === "light");
-    supabase.from("profiles").update({ theme }).eq("user_id", user!.id).then(() => {
-      qc.invalidateQueries({ queryKey: ["profile"] });
-      toast.success("Theme saved");
-    });
+    await supabase.from("profiles").update({ theme }).eq("user_id", user!.id);
+    qc.invalidateQueries({ queryKey: ["profile"] });
+    toast.success(`Switched to ${theme} theme`);
   };
 
   const saveProfile = async () => {
