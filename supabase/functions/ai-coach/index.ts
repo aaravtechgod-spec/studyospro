@@ -110,28 +110,42 @@ serve(async (req) => {
     const model = (wantsImage || hasImageInput)
       ? "google/gemini-2.5-flash-image"
       : webSearch
-        ? "google/gemini-2.5-flash"
+        ? "google/gemini-2.5-pro"
         : "google/gemini-3-flash-preview";
 
-    const payload: any = {
-      model,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: true,
+    const buildPayload = (useTools: boolean) => {
+      const p: any = {
+        model,
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        stream: true,
+      };
+      if (wantsImage) p.modalities = ["image", "text"];
+      if (webSearch && useTools) p.tools = [{ type: "google_search" }];
+      return p;
     };
-    if (wantsImage) payload.modalities = ["image", "text"];
-    if (webSearch) {
-      // Gemini google_search grounding
-      payload.tools = [{ type: "google_search" }];
-    }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    let response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(buildPayload(true)),
     });
+
+    // Fallback: if the chosen model rejects tool use, retry without tools
+    if (!response.ok && webSearch && (response.status === 404 || response.status === 400)) {
+      const errText = await response.text().catch(() => "");
+      console.warn("Tool-use rejected, retrying without google_search:", response.status, errText);
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(buildPayload(false)),
+      });
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
