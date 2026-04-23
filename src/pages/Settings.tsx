@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import ImportStudyOS from "@/components/ImportStudyOS";
 import { useAIPrefs, useUpdateAIPrefs, BOARDS, CLASSES, DIFFICULTIES, TONES, CURRICULA } from "@/hooks/useAIPrefs";
+import { useTheme, type Theme } from "@/hooks/useTheme";
 import { Globe, Image as ImageIcon, X } from "lucide-react";
 
 const THEMES = [
@@ -20,6 +21,7 @@ export default function Settings() {
   const qc = useQueryClient();
   const prefs = useAIPrefs();
   const updatePrefs = useUpdateAIPrefs();
+  const { theme: currentTheme, setTheme } = useTheme();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [subjectInput, setSubjectInput] = useState("");
@@ -31,17 +33,24 @@ export default function Settings() {
     }
   }, [profile]);
 
-  const applyTheme = async (theme: string) => {
-    document.documentElement.classList.toggle("light", theme === "light");
-    await supabase.from("profiles").update({ theme }).eq("user_id", user!.id);
-    qc.invalidateQueries({ queryKey: ["profile"] });
-    toast.success(`Switched to ${theme} theme`);
+  const applyTheme = async (theme: Theme) => {
+    try {
+      await setTheme(theme);
+      toast.success(`Switched to ${theme} theme`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not change theme");
+    }
   };
 
   const saveProfile = async () => {
-    await supabase.from("profiles").update({ display_name: name, username }).eq("user_id", user!.id);
-    qc.invalidateQueries({ queryKey: ["profile"] });
-    toast.success("Profile saved");
+    try {
+      const { error } = await supabase.from("profiles").update({ display_name: name, username }).eq("user_id", user!.id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Profile saved");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not save profile");
+    }
   };
 
   const addSubject = () => {
@@ -166,8 +175,8 @@ export default function Settings() {
         <h3 className="font-display font-bold text-lg mb-4">Theme</h3>
         <div className="grid sm:grid-cols-2 gap-3">
           {THEMES.map(t => (
-            <button key={t.id} onClick={() => applyTheme(t.id)}
-              className={`p-4 rounded-md border text-left transition-colors ${profile?.theme === t.id ? "border-primary bg-primary/10" : "border-border bg-surface-2 hover:border-primary/50"}`}>
+            <button key={t.id} onClick={() => applyTheme(t.id as Theme)}
+              className={`p-4 rounded-md border text-left transition-colors ${currentTheme === t.id ? "border-primary bg-primary/10" : "border-border bg-surface-2 hover:border-primary/50"}`}>
               <div className="font-display font-bold">{t.label}</div>
               <div className="text-xs text-muted-foreground mt-0.5">{t.desc}</div>
             </button>

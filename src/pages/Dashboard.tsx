@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { PageHeader, StatCard } from "@/components/ui-kit";
+import { PageHeader, StatCard, SkeletonRow, Skeleton } from "@/components/ui-kit";
 import { format, isToday, isThisWeek, parseISO, differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { Calendar, ListChecks, Timer, Flame, ArrowRight } from "lucide-react";
@@ -11,7 +11,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
-  const { data: tasks = [] } = useQuery({
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["dashboard-tasks", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -20,7 +20,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: events = [] } = useQuery({
+  const { data: events = [], isLoading: eventsLoading } = useQuery({
     queryKey: ["dashboard-events", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -71,7 +71,9 @@ export default function Dashboard() {
             <h3 className="font-display font-bold text-lg flex items-center gap-2"><ListChecks className="w-4 h-4 text-primary" /> Up next</h3>
             <Link to="/tasks" className="text-xs text-primary hover:underline flex items-center gap-1">All <ArrowRight className="w-3 h-3" /></Link>
           </div>
-          {tasks.length === 0 ? (
+          {tasksLoading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)}</div>
+          ) : tasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No pending tasks. ✨</p>
           ) : (
             <ul className="space-y-2">
@@ -103,7 +105,9 @@ export default function Dashboard() {
             <h3 className="font-display font-bold text-lg flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Upcoming</h3>
             <Link to="/schedule" className="text-xs text-primary hover:underline flex items-center gap-1">Schedule <ArrowRight className="w-3 h-3" /></Link>
           </div>
-          {events.length === 0 ? (
+          {eventsLoading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)}</div>
+          ) : events.length === 0 ? (
             <p className="text-sm text-muted-foreground">No upcoming events.</p>
           ) : (
             <ul className="space-y-2">
