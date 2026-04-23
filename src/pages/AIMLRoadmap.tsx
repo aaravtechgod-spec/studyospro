@@ -26,7 +26,7 @@ export default function AIMLRoadmap() {
         .select("day_number,completed_at")
         .eq("user_id", user!.id);
       if (error) throw error;
-      return (data ?? []) as { day_number: number; completed_at: string }[];
+      return ((data ?? []) as unknown) as { day_number: number; completed_at: string }[];
     },
   });
 
