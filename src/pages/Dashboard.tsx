@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { PageHeader, StatCard, SkeletonRow, Skeleton } from "@/components/ui-kit";
+import { PageHeader, StatCard, SkeletonRow } from "@/components/ui-kit";
 import { format, isToday, isThisWeek, parseISO, differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { Calendar, ListChecks, Timer, Flame, ArrowRight } from "lucide-react";
