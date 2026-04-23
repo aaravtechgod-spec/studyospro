@@ -15,6 +15,7 @@ import Schedule from "./pages/Schedule";
 import Subjects from "./pages/Subjects";
 import Flashcards from "./pages/Flashcards";
 import Coach from "./pages/Coach";
+import AIMLRoadmap from "./pages/AIMLRoadmap";
 import Gamification from "./pages/Gamification";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/subjects" element={<Subjects />} />
               <Route path="/flashcards" element={<Flashcards />} />
               <Route path="/coach" element={<Coach />} />
+              <Route path="/aiml-roadmap" element={<AIMLRoadmap />} />
               <Route path="/gamification" element={<Gamification />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
