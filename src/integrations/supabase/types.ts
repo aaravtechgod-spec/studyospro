@@ -41,6 +41,99 @@ export type Database = {
         }
         Relationships: []
       }
+      aiml_badges: {
+        Row: {
+          badge_key: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_key: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_key?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      aiml_journal: {
+        Row: {
+          blocker: boolean
+          confusing: string | null
+          created_at: string
+          day_number: number
+          id: string
+          learned: string | null
+          minutes_spent: number | null
+          skip_reason: string | null
+          skipped: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blocker?: boolean
+          confusing?: string | null
+          created_at?: string
+          day_number: number
+          id?: string
+          learned?: string | null
+          minutes_spent?: number | null
+          skip_reason?: string | null
+          skipped?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blocker?: boolean
+          confusing?: string | null
+          created_at?: string
+          day_number?: number
+          id?: string
+          learned?: string | null
+          minutes_spent?: number | null
+          skip_reason?: string | null
+          skipped?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      aiml_lessons: {
+        Row: {
+          content: string
+          created_at: string
+          day_number: number
+          id: string
+          resources: Json
+          track: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          day_number: number
+          id?: string
+          resources?: Json
+          track?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          day_number?: number
+          id?: string
+          resources?: Json
+          track?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       aiml_progress: {
         Row: {
           completed_at: string
@@ -64,6 +157,129 @@ export type Database = {
           day_number?: number
           id?: string
           note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      aiml_quizzes: {
+        Row: {
+          answers: Json | null
+          attempts: number
+          best_score: number | null
+          created_at: string
+          day_number: number
+          id: string
+          questions: Json
+          score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          attempts?: number
+          best_score?: number | null
+          created_at?: string
+          day_number: number
+          id?: string
+          questions: Json
+          score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          attempts?: number
+          best_score?: number | null
+          created_at?: string
+          day_number?: number
+          id?: string
+          questions?: Json
+          score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      aiml_settings: {
+        Row: {
+          created_at: string
+          daily_minutes: number | null
+          freeze_tokens: number
+          freezes_used: number
+          id: string
+          pace: string
+          public_leaderboard: boolean
+          reminder_enabled: boolean
+          reminder_time: string | null
+          start_date: string
+          track: string
+          updated_at: string
+          user_id: string
+          vacation_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          daily_minutes?: number | null
+          freeze_tokens?: number
+          freezes_used?: number
+          id?: string
+          pace?: string
+          public_leaderboard?: boolean
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          start_date?: string
+          track?: string
+          updated_at?: string
+          user_id: string
+          vacation_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          daily_minutes?: number | null
+          freeze_tokens?: number
+          freezes_used?: number
+          id?: string
+          pace?: string
+          public_leaderboard?: boolean
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          start_date?: string
+          track?: string
+          updated_at?: string
+          user_id?: string
+          vacation_until?: string | null
+        }
+        Relationships: []
+      }
+      aiml_subtasks: {
+        Row: {
+          created_at: string
+          day_number: number
+          done: boolean
+          id: string
+          position: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_number: number
+          done?: boolean
+          id?: string
+          position?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_number?: number
+          done?: boolean
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -322,9 +538,11 @@ export type Database = {
           ai_image_gen: boolean
           ai_tone: string
           ai_web_search: boolean
+          aiml_public: boolean
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          handle: string | null
           id: string
           last_active_date: string | null
           level: number
@@ -344,9 +562,11 @@ export type Database = {
           ai_image_gen?: boolean
           ai_tone?: string
           ai_web_search?: boolean
+          aiml_public?: boolean
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          handle?: string | null
           id?: string
           last_active_date?: string | null
           level?: number
@@ -366,9 +586,11 @@ export type Database = {
           ai_image_gen?: boolean
           ai_tone?: string
           ai_web_search?: boolean
+          aiml_public?: boolean
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          handle?: string | null
           id?: string
           last_active_date?: string | null
           level?: number
@@ -499,6 +721,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_aiml_xp: {
+        Args: { _amount?: number; _event: string }
+        Returns: {
+          level: number
+          streak_days: number
+          xp: number
+        }[]
+      }
       award_xp: {
         Args: { _event_type: string; _ref_id?: string }
         Returns: {
