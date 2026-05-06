@@ -72,7 +72,7 @@ Output STRICT markdown with these sections in order:
       });
       if (r.status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: corsHeaders });
       if (r.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: corsHeaders });
-      if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: corsHeaders });
+      if (!r.ok) return new Response((console.error("gateway err", await r.text()), JSON.stringify({ error: "AI service error" })), { status: 500, headers: corsHeaders });
       const j = await r.json();
       const content = j.choices?.[0]?.message?.content ?? "";
 
@@ -128,7 +128,7 @@ Make questions test understanding (not trivia). Add a 1-line explanation for the
       });
       if (r.status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: corsHeaders });
       if (r.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: corsHeaders });
-      if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: corsHeaders });
+      if (!r.ok) return new Response((console.error("gateway err", await r.text()), JSON.stringify({ error: "AI service error" })), { status: 500, headers: corsHeaders });
       const j = await r.json();
       const tc = j.choices?.[0]?.message?.tool_calls?.[0];
       const args = tc ? JSON.parse(tc.function.arguments) : { questions: [] };
@@ -148,7 +148,7 @@ Make questions test understanding (not trivia). Add a 1-line explanation for the
         model: "openai/gpt-5",
         messages: [{ role: "system", content: sys }, { role: "user", content: usr }],
       });
-      if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: corsHeaders });
+      if (!r.ok) return new Response((console.error("gateway err", await r.text()), JSON.stringify({ error: "AI service error" })), { status: 500, headers: corsHeaders });
       const j = await r.json();
       return new Response(JSON.stringify({ feedback: j.choices?.[0]?.message?.content ?? "" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -175,7 +175,7 @@ Make questions test understanding (not trivia). Add a 1-line explanation for the
         }],
         tool_choice: { type: "function", function: { name: "emit_steps" } },
       });
-      if (!r.ok) return new Response(JSON.stringify({ error: await r.text() }), { status: 500, headers: corsHeaders });
+      if (!r.ok) return new Response((console.error("gateway err", await r.text()), JSON.stringify({ error: "AI service error" })), { status: 500, headers: corsHeaders });
       const j = await r.json();
       const tc = j.choices?.[0]?.message?.tool_calls?.[0];
       const args = tc ? JSON.parse(tc.function.arguments) : { steps: [] };
@@ -185,6 +185,6 @@ Make questions test understanding (not trivia). Add a 1-line explanation for the
     return new Response(JSON.stringify({ error: "unknown mode" }), { status: 400, headers: corsHeaders });
   } catch (e: any) {
     console.error("aiml-generate", e);
-    return new Response(JSON.stringify({ error: e?.message ?? "unknown" }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "An unexpected error occurred" }), { status: 500, headers: corsHeaders });
   }
 });
