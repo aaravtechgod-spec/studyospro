@@ -314,6 +314,37 @@ export default function DayDetail({ dayNumber, open, onOpenChange, isCompleted, 
         )}
       </TabsContent>
 
+      {/* RESOURCES */}
+      <TabsContent value="resources" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">{resources?.cached ? "Cached" : "Fresh"} curated free resources for this topic</span>
+          <button onClick={() => refetchRes()} className="text-xs text-primary hover:underline flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> Refresh
+          </button>
+        </div>
+        {resFetching ? (
+          <div className="space-y-2"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
+        ) : resources?.items?.length ? (
+          <ul className="space-y-2">
+            {(resources.items as any[]).map((it, i) => (
+              <li key={i} className="surface p-3 bg-surface-2 hover:border-primary transition-colors">
+                <a href={it.url} target="_blank" rel="noreferrer" className="block">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[9px] font-mono uppercase tracking-widest bg-primary/15 text-primary px-1.5 py-0.5 rounded">{it.type}</span>
+                    {it.author && <span className="text-[10px] text-muted-foreground">by {it.author}</span>}
+                    <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">{it.title}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{it.why}</div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="text-sm text-muted-foreground">Open this tab to curate 6–8 hand-picked free resources.</div>
+        )}
+      </TabsContent>
+
       {/* QUIZ */}
       <TabsContent value="quiz" className="space-y-4">
         {quizFetching ? <Skeleton className="h-40 w-full" /> :
