@@ -210,6 +210,27 @@ export default function DayDetail({ dayNumber, open, onOpenChange, isCompleted, 
     } catch { toast.error("Could not generate steps"); }
   };
 
+  // ----- Resources -----
+  const { data: resources, isFetching: resFetching, refetch: refetchRes } = useQuery({
+    queryKey: ["aiml-resources", user?.id, dayNumber, settings?.track],
+    enabled: !!user && open && tab === "resources",
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aiml-generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session!.access_token}` },
+        body: JSON.stringify({
+          mode: "resources", day: dayNumber, title: task.title, detail: task.detail,
+          phase: phase.title, track: settings?.track ?? "engineer",
+        }),
+      });
+      if (r.status === 429) { toast.error("Rate limited"); throw new Error("rate"); }
+      if (r.status === 402) { toast.error("AI credits exhausted"); throw new Error("credits"); }
+      if (!r.ok) throw new Error("resources failed");
+      return await r.json();
+    },
+  });
+
   if (!task) return null;
 
   const content = (
