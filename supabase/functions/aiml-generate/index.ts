@@ -28,10 +28,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return new Response(JSON.stringify({ error: "unauth" }), { status: 401, headers: corsHeaders });
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } },
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
     );
     const { data: u } = await supabase.auth.getUser();
     if (!u?.user) return new Response(JSON.stringify({ error: "unauth" }), { status: 401, headers: corsHeaders });
