@@ -3,13 +3,28 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+function SignedImage({ path, alt }: { path: string; alt?: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.storage.from("note-images").createSignedUrl(path, 3600).then(({ data }) => {
+      if (!cancelled) setUrl(data?.signedUrl ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [path]);
+  if (!url) return <span className="text-muted-foreground text-xs">[loading image…]</span>;
+  return <img src={url} alt={alt ?? ""} loading="lazy" />;
+}
 
 export default function Markdown({ children }: { children: string }) {
-  // Normalize common AI math delimiters so remark-math picks them up:
-  // \( ... \) -> $...$ ; \[ ... \] -> $$...$$
+  // Normalize math delimiters and rewrite legacy public note-image URLs to tokens.
   const normalized = children
     .replace(/\\\[(.+?)\\\]/gs, (_, e) => `$$${e}$$`)
-    .replace(/\\\((.+?)\\\)/gs, (_, e) => `$${e}$`);
+    .replace(/\\\((.+?)\\\)/gs, (_, e) => `$${e}$`)
+    .replace(/https?:\/\/[^\s)]+\/storage\/v1\/object\/public\/note-images\/([^\s)]+)/g, "note-image:$1");
 
   return (
     <div className="prose prose-invert prose-sm max-w-none
@@ -26,6 +41,15 @@ export default function Markdown({ children }: { children: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
+        components={{
+          img: ({ src, alt }) => {
+            const s = String(src ?? "");
+            if (s.startsWith("note-image:")) {
+              return <SignedImage path={s.slice("note-image:".length)} alt={alt} />;
+            }
+            return <img src={s} alt={alt ?? ""} loading="lazy" />;
+          },
+        }}
       >
         {normalized}
       </ReactMarkdown>
