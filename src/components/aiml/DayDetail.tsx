@@ -12,7 +12,7 @@ import { useAimlSettings } from "@/hooks/useAimlSettings";
 import { toast } from "sonner";
 import {
   Sparkles, Check, X, Plus, Trash2, BookOpen, FileQuestion, ListChecks,
-  AlertTriangle, SkipForward, Maximize2, Loader2, Code2, Save,
+  AlertTriangle, SkipForward, Maximize2, Loader2, Code2, Save, Link2, ExternalLink,
 } from "lucide-react";
 
 interface Props {
@@ -210,13 +210,35 @@ export default function DayDetail({ dayNumber, open, onOpenChange, isCompleted, 
     } catch { toast.error("Could not generate steps"); }
   };
 
+  // ----- Resources -----
+  const { data: resources, isFetching: resFetching, refetch: refetchRes } = useQuery({
+    queryKey: ["aiml-resources", user?.id, dayNumber, settings?.track],
+    enabled: !!user && open && tab === "resources",
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aiml-generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session!.access_token}` },
+        body: JSON.stringify({
+          mode: "resources", day: dayNumber, title: task.title, detail: task.detail,
+          phase: phase.title, track: settings?.track ?? "engineer",
+        }),
+      });
+      if (r.status === 429) { toast.error("Rate limited"); throw new Error("rate"); }
+      if (r.status === 402) { toast.error("AI credits exhausted"); throw new Error("credits"); }
+      if (!r.ok) throw new Error("resources failed");
+      return await r.json();
+    },
+  });
+
   if (!task) return null;
 
   const content = (
     <Tabs value={tab} onValueChange={setTab} className="w-full">
-      <TabsList className="grid grid-cols-5 w-full mb-4">
+      <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full mb-4">
         <TabsTrigger value="plan" className="gap-1"><ListChecks className="w-3.5 h-3.5" />Plan</TabsTrigger>
         <TabsTrigger value="lesson" className="gap-1"><BookOpen className="w-3.5 h-3.5" />Lesson</TabsTrigger>
+        <TabsTrigger value="resources" className="gap-1"><Link2 className="w-3.5 h-3.5" />Resources</TabsTrigger>
         <TabsTrigger value="quiz" className="gap-1"><FileQuestion className="w-3.5 h-3.5" />Quiz</TabsTrigger>
         <TabsTrigger value="review" className="gap-1"><Code2 className="w-3.5 h-3.5" />Review</TabsTrigger>
         <TabsTrigger value="journal" className="gap-1"><Save className="w-3.5 h-3.5" />Journal</TabsTrigger>
@@ -289,6 +311,37 @@ export default function DayDetail({ dayNumber, open, onOpenChange, isCompleted, 
           <div className="prose prose-sm prose-invert max-w-none"><Markdown>{lesson.content}</Markdown></div>
         ) : (
           <div className="text-sm text-muted-foreground">Click the tab to generate a deep-dive lesson for this day.</div>
+        )}
+      </TabsContent>
+
+      {/* RESOURCES */}
+      <TabsContent value="resources" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">{resources?.cached ? "Cached" : "Fresh"} curated free resources for this topic</span>
+          <button onClick={() => refetchRes()} className="text-xs text-primary hover:underline flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> Refresh
+          </button>
+        </div>
+        {resFetching ? (
+          <div className="space-y-2"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
+        ) : resources?.items?.length ? (
+          <ul className="space-y-2">
+            {(resources.items as any[]).map((it, i) => (
+              <li key={i} className="surface p-3 bg-surface-2 hover:border-primary transition-colors">
+                <a href={it.url} target="_blank" rel="noreferrer" className="block">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[9px] font-mono uppercase tracking-widest bg-primary/15 text-primary px-1.5 py-0.5 rounded">{it.type}</span>
+                    {it.author && <span className="text-[10px] text-muted-foreground">by {it.author}</span>}
+                    <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">{it.title}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{it.why}</div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="text-sm text-muted-foreground">Open this tab to curate 6–8 hand-picked free resources.</div>
         )}
       </TabsContent>
 

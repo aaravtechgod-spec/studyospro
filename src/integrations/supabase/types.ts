@@ -62,6 +62,66 @@ export type Database = {
         }
         Relationships: []
       }
+      aiml_capstones: {
+        Row: {
+          ai_feedback: string | null
+          created_at: string
+          day_number: number | null
+          description: string | null
+          github_url: string | null
+          graded_at: string | null
+          id: string
+          phase: string | null
+          score_code_quality: number | null
+          score_correctness: number | null
+          score_documentation: number | null
+          score_ml_soundness: number | null
+          score_originality: number | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          created_at?: string
+          day_number?: number | null
+          description?: string | null
+          github_url?: string | null
+          graded_at?: string | null
+          id?: string
+          phase?: string | null
+          score_code_quality?: number | null
+          score_correctness?: number | null
+          score_documentation?: number | null
+          score_ml_soundness?: number | null
+          score_originality?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          created_at?: string
+          day_number?: number | null
+          description?: string | null
+          github_url?: string | null
+          graded_at?: string | null
+          id?: string
+          phase?: string | null
+          score_code_quality?: number | null
+          score_correctness?: number | null
+          score_documentation?: number | null
+          score_ml_soundness?: number | null
+          score_originality?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       aiml_journal: {
         Row: {
           blocker: boolean
@@ -196,6 +256,33 @@ export type Database = {
           questions?: Json
           score?: number | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      aiml_resources: {
+        Row: {
+          created_at: string
+          day_number: number
+          id: string
+          items: Json
+          track: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_number: number
+          id?: string
+          items?: Json
+          track?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_number?: number
+          id?: string
+          items?: Json
+          track?: string
           user_id?: string
         }
         Relationships: []
