@@ -108,8 +108,8 @@ export default function Notes() {
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage.from("note-images").upload(path, file, { contentType: file.type });
       if (error) throw error;
-      const { data } = supabase.storage.from("note-images").getPublicUrl(path);
-      setContent(c => c + `\n![image](${data.publicUrl})\n`);
+      // Store as a token; rendered via signed URLs at preview time.
+      setContent(c => c + `\n![image](note-image:${path})\n`);
       toast.success("Image inserted");
     } catch (e: any) {
       toast.error(e.message ?? "Upload failed");
