@@ -12,7 +12,7 @@ import { useAimlSettings } from "@/hooks/useAimlSettings";
 import { toast } from "sonner";
 import {
   Sparkles, Check, X, Plus, Trash2, BookOpen, FileQuestion, ListChecks,
-  AlertTriangle, SkipForward, Maximize2, Loader2, Code2, Save,
+  AlertTriangle, SkipForward, Maximize2, Loader2, Code2, Save, Link2, ExternalLink,
 } from "lucide-react";
 
 interface Props {
