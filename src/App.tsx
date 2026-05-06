@@ -45,6 +45,7 @@ const App = () => (
               <Route path="/flashcards" element={<Flashcards />} />
               <Route path="/coach" element={<Coach />} />
               <Route path="/aiml-roadmap" element={<AIMLRoadmap />} />
+              <Route path="/aiml-capstones" element={<AIMLCapstones />} />
               <Route path="/gamification" element={<Gamification />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
