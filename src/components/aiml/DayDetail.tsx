@@ -235,9 +235,10 @@ export default function DayDetail({ dayNumber, open, onOpenChange, isCompleted, 
 
   const content = (
     <Tabs value={tab} onValueChange={setTab} className="w-full">
-      <TabsList className="grid grid-cols-5 w-full mb-4">
+      <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full mb-4">
         <TabsTrigger value="plan" className="gap-1"><ListChecks className="w-3.5 h-3.5" />Plan</TabsTrigger>
         <TabsTrigger value="lesson" className="gap-1"><BookOpen className="w-3.5 h-3.5" />Lesson</TabsTrigger>
+        <TabsTrigger value="resources" className="gap-1"><Link2 className="w-3.5 h-3.5" />Resources</TabsTrigger>
         <TabsTrigger value="quiz" className="gap-1"><FileQuestion className="w-3.5 h-3.5" />Quiz</TabsTrigger>
         <TabsTrigger value="review" className="gap-1"><Code2 className="w-3.5 h-3.5" />Review</TabsTrigger>
         <TabsTrigger value="journal" className="gap-1"><Save className="w-3.5 h-3.5" />Journal</TabsTrigger>
