@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
     });
   } catch (e: any) {
     console.error("Import error:", e);
-    return new Response(JSON.stringify({ error: e.message ?? String(e) }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
