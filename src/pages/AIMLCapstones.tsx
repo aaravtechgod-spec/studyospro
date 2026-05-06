@@ -140,9 +140,9 @@ export default function AIMLCapstones() {
         <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)}</div>
       ) : capstones.length === 0 ? (
         <EmptyState
-          icon={Trophy}
+          icon={<Trophy className="w-12 h-12 text-primary" />}
           title="No capstones yet"
-          description="Start with one of the suggested projects (e.g. ML pipeline, fine-tuned LLM, RAG agent). Add your repo when you're ready and get a senior-engineer-grade AI review."
+          hint="Start with one of the suggested projects (e.g. ML pipeline, fine-tuned LLM, RAG agent). Add your repo when you're ready and get a senior-engineer-grade AI review."
         />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
