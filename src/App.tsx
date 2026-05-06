@@ -16,6 +16,7 @@ import Subjects from "./pages/Subjects";
 import Flashcards from "./pages/Flashcards";
 import Coach from "./pages/Coach";
 import AIMLRoadmap from "./pages/AIMLRoadmap";
+import AIMLCapstones from "./pages/AIMLCapstones";
 import Gamification from "./pages/Gamification";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
