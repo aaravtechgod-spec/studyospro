@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAwardXp } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Play, Pause, RotateCcw, Plus, Trash2, Bell, BellOff, Repeat } from "lucide-react";
+import { Play, Pause, RotateCcw, Plus, Trash2, Bell, BellOff, Repeat, Timer as TimerIcon, Watch, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfDay, endOfDay } from "date-fns";
 
@@ -42,6 +42,62 @@ export default function Timer() {
   const [customMin, setCustomMin] = useState(30);
   const [presetLabel, setPresetLabel] = useState("");
   const intervalRef = useRef<number | null>(null);
+
+  // Stopwatch state
+  const [mode, setMode] = useState<"timer" | "stopwatch">("timer");
+  const [swMs, setSwMs] = useState(0);
+  const [swRunning, setSwRunning] = useState(false);
+  const [laps, setLaps] = useState<number[]>([]);
+  const swStartRef = useRef<number | null>(null);
+  const swBaseRef = useRef(0);
+  const swRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!swRunning) return;
+    swStartRef.current = performance.now();
+    const tick = () => {
+      setSwMs(swBaseRef.current + (performance.now() - (swStartRef.current ?? 0)));
+      swRafRef.current = requestAnimationFrame(tick);
+    };
+    swRafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (swRafRef.current) cancelAnimationFrame(swRafRef.current);
+      swBaseRef.current += performance.now() - (swStartRef.current ?? performance.now());
+    };
+  }, [swRunning]);
+
+  const swReset = () => { setSwRunning(false); setSwMs(0); swBaseRef.current = 0; setLaps([]); };
+  const swLap = () => setLaps(ls => [swMs, ...ls]);
+  const fmtSw = (ms: number) => {
+    const totalCs = Math.floor(ms / 10);
+    const cs = totalCs % 100;
+    const totalS = Math.floor(totalCs / 100);
+    const s = totalS % 60;
+    const totalM = Math.floor(totalS / 60);
+    const m = totalM % 60;
+    const h = Math.floor(totalM / 60);
+    const mm = String(m).padStart(2, "0");
+    const ss = String(s).padStart(2, "0");
+    const cc = String(cs).padStart(2, "0");
+    return h > 0 ? `${h}:${mm}:${ss}.${cc}` : `${mm}:${ss}.${cc}`;
+  };
+
+  const saveStopwatchSession = async () => {
+    if (!user) return;
+    const minutes = Math.round(swMs / 60000);
+    if (minutes < 1) { toast.error("Less than a minute — nothing to save"); return; }
+    const { data: inserted, error } = await supabase.from("focus_sessions").insert({
+      user_id: user.id,
+      duration_minutes: minutes,
+      session_type: "focus",
+      subject_id: subjectId || null,
+    }).select("id").single();
+    if (error) { toast.error(error.message); return; }
+    const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted!.id });
+    qc.invalidateQueries({ queryKey: ["focus_today"] });
+    toast.success(`Saved ${minutes} min`, { description: `Total XP: ${result?.xp ?? ""}` });
+    swReset();
+  };
 
   const { data: subjects = [] } = useQuery({
     queryKey: ["subjects", user?.id],
@@ -175,9 +231,21 @@ export default function Timer() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Study Timer" subtitle="Pomodoro · Custom · Auto-cycle · Shortcuts: Space / R" />
+      <PageHeader title="Study Timer" subtitle="Pomodoro · Stopwatch · Auto-cycle · Shortcuts: Space / R" />
+
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setMode("timer")}
+          className={`px-4 py-2 rounded-md text-xs font-bold border flex items-center gap-1.5 ${mode === "timer" ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2"}`}>
+          <TimerIcon className="w-3.5 h-3.5" /> Timer
+        </button>
+        <button onClick={() => setMode("stopwatch")}
+          className={`px-4 py-2 rounded-md text-xs font-bold border flex items-center gap-1.5 ${mode === "stopwatch" ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2"}`}>
+          <Watch className="w-3.5 h-3.5" /> Stopwatch
+        </button>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
+        {mode === "timer" ? (
         <div className="surface p-8 lg:col-span-2 flex flex-col items-center">
           <div className="relative w-64 h-64 mb-6">
             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
@@ -231,6 +299,45 @@ export default function Timer() {
             </div>
           </div>
         </div>
+        ) : (
+        <div className="surface p-8 lg:col-span-2 flex flex-col items-center">
+          <div className="font-display font-extrabold text-7xl tabular-nums my-10 tracking-tight">
+            {fmtSw(swMs)}
+          </div>
+          <div className="flex gap-3 mb-6">
+            <button onClick={() => setSwRunning(r => !r)}
+              className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-md flex items-center gap-2 hover:bg-primary-glow min-w-[140px] justify-center">
+              {swRunning ? <><Pause className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> Start</>}
+            </button>
+            <button onClick={swLap} disabled={!swRunning}
+              className="bg-surface-2 border border-border px-4 py-3 rounded-md disabled:opacity-40" title="Lap">
+              <Flag className="w-4 h-4" />
+            </button>
+            <button onClick={swReset} className="bg-surface-2 border border-border px-4 py-3 rounded-md" title="Reset">
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button onClick={saveStopwatchSession} disabled={swMs < 60000}
+              className="bg-surface-2 border border-border px-4 py-3 rounded-md text-xs font-bold disabled:opacity-40">
+              Save session
+            </button>
+          </div>
+          {laps.length > 0 && (
+            <div className="w-full max-w-md max-h-64 overflow-y-auto border border-border rounded-md divide-y divide-border">
+              {laps.map((lap, i) => {
+                const idx = laps.length - i;
+                const prev = laps[i + 1] ?? 0;
+                return (
+                  <div key={i} className="flex justify-between px-3 py-2 text-sm tabular-nums">
+                    <span className="text-muted-foreground">Lap {idx}</span>
+                    <span className="text-muted-foreground">+{fmtSw(lap - prev)}</span>
+                    <span className="font-semibold">{fmtSw(lap)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        )}
 
         <div className="space-y-3">
           <div className="surface p-4">
