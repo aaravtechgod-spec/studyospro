@@ -299,6 +299,45 @@ export default function Timer() {
             </div>
           </div>
         </div>
+        ) : (
+        <div className="surface p-8 lg:col-span-2 flex flex-col items-center">
+          <div className="font-display font-extrabold text-7xl tabular-nums my-10 tracking-tight">
+            {fmtSw(swMs)}
+          </div>
+          <div className="flex gap-3 mb-6">
+            <button onClick={() => setSwRunning(r => !r)}
+              className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-md flex items-center gap-2 hover:bg-primary-glow min-w-[140px] justify-center">
+              {swRunning ? <><Pause className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> Start</>}
+            </button>
+            <button onClick={swLap} disabled={!swRunning}
+              className="bg-surface-2 border border-border px-4 py-3 rounded-md disabled:opacity-40" title="Lap">
+              <Flag className="w-4 h-4" />
+            </button>
+            <button onClick={swReset} className="bg-surface-2 border border-border px-4 py-3 rounded-md" title="Reset">
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button onClick={saveStopwatchSession} disabled={swMs < 60000}
+              className="bg-surface-2 border border-border px-4 py-3 rounded-md text-xs font-bold disabled:opacity-40">
+              Save session
+            </button>
+          </div>
+          {laps.length > 0 && (
+            <div className="w-full max-w-md max-h-64 overflow-y-auto border border-border rounded-md divide-y divide-border">
+              {laps.map((lap, i) => {
+                const idx = laps.length - i;
+                const prev = laps[i + 1] ?? 0;
+                return (
+                  <div key={i} className="flex justify-between px-3 py-2 text-sm tabular-nums">
+                    <span className="text-muted-foreground">Lap {idx}</span>
+                    <span className="text-muted-foreground">+{fmtSw(lap - prev)}</span>
+                    <span className="font-semibold">{fmtSw(lap)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        )}
 
         <div className="space-y-3">
           <div className="surface p-4">
