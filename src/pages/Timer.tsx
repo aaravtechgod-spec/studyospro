@@ -43,6 +43,62 @@ export default function Timer() {
   const [presetLabel, setPresetLabel] = useState("");
   const intervalRef = useRef<number | null>(null);
 
+  // Stopwatch state
+  const [mode, setMode] = useState<"timer" | "stopwatch">("timer");
+  const [swMs, setSwMs] = useState(0);
+  const [swRunning, setSwRunning] = useState(false);
+  const [laps, setLaps] = useState<number[]>([]);
+  const swStartRef = useRef<number | null>(null);
+  const swBaseRef = useRef(0);
+  const swRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!swRunning) return;
+    swStartRef.current = performance.now();
+    const tick = () => {
+      setSwMs(swBaseRef.current + (performance.now() - (swStartRef.current ?? 0)));
+      swRafRef.current = requestAnimationFrame(tick);
+    };
+    swRafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (swRafRef.current) cancelAnimationFrame(swRafRef.current);
+      swBaseRef.current += performance.now() - (swStartRef.current ?? performance.now());
+    };
+  }, [swRunning]);
+
+  const swReset = () => { setSwRunning(false); setSwMs(0); swBaseRef.current = 0; setLaps([]); };
+  const swLap = () => setLaps(ls => [swMs, ...ls]);
+  const fmtSw = (ms: number) => {
+    const totalCs = Math.floor(ms / 10);
+    const cs = totalCs % 100;
+    const totalS = Math.floor(totalCs / 100);
+    const s = totalS % 60;
+    const totalM = Math.floor(totalS / 60);
+    const m = totalM % 60;
+    const h = Math.floor(totalM / 60);
+    const mm = String(m).padStart(2, "0");
+    const ss = String(s).padStart(2, "0");
+    const cc = String(cs).padStart(2, "0");
+    return h > 0 ? `${h}:${mm}:${ss}.${cc}` : `${mm}:${ss}.${cc}`;
+  };
+
+  const saveStopwatchSession = async () => {
+    if (!user) return;
+    const minutes = Math.round(swMs / 60000);
+    if (minutes < 1) { toast.error("Less than a minute — nothing to save"); return; }
+    const { data: inserted, error } = await supabase.from("focus_sessions").insert({
+      user_id: user.id,
+      duration_minutes: minutes,
+      session_type: "focus",
+      subject_id: subjectId || null,
+    }).select("id").single();
+    if (error) { toast.error(error.message); return; }
+    const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted!.id });
+    qc.invalidateQueries({ queryKey: ["focus_today"] });
+    toast.success(`Saved ${minutes} min`, { description: `Total XP: ${result?.xp ?? ""}` });
+    swReset();
+  };
+
   const { data: subjects = [] } = useQuery({
     queryKey: ["subjects", user?.id],
     enabled: !!user,
