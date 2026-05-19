@@ -231,9 +231,21 @@ export default function Timer() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Study Timer" subtitle="Pomodoro · Custom · Auto-cycle · Shortcuts: Space / R" />
+      <PageHeader title="Study Timer" subtitle="Pomodoro · Stopwatch · Auto-cycle · Shortcuts: Space / R" />
+
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setMode("timer")}
+          className={`px-4 py-2 rounded-md text-xs font-bold border flex items-center gap-1.5 ${mode === "timer" ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2"}`}>
+          <TimerIcon className="w-3.5 h-3.5" /> Timer
+        </button>
+        <button onClick={() => setMode("stopwatch")}
+          className={`px-4 py-2 rounded-md text-xs font-bold border flex items-center gap-1.5 ${mode === "stopwatch" ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2"}`}>
+          <Watch className="w-3.5 h-3.5" /> Stopwatch
+        </button>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
+        {mode === "timer" ? (
         <div className="surface p-8 lg:col-span-2 flex flex-col items-center">
           <div className="relative w-64 h-64 mb-6">
             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
