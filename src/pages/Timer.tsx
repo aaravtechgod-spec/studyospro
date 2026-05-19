@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAwardXp } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Play, Pause, RotateCcw, Plus, Trash2, Bell, BellOff, Repeat } from "lucide-react";
+import { Play, Pause, RotateCcw, Plus, Trash2, Bell, BellOff, Repeat, Timer as TimerIcon, Watch, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfDay, endOfDay } from "date-fns";
 
