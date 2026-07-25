@@ -1,6 +1,7 @@
 import { useState, FormEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
