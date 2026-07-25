@@ -246,59 +246,108 @@ export default function Timer() {
 
       <div className="grid lg:grid-cols-3 gap-5">
         {mode === "timer" ? (
-        <div className="surface p-8 lg:col-span-2 flex flex-col items-center">
-          <div className="relative w-64 h-64 mb-6">
-            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-              <circle cx="50" cy="50" r="46" fill="none" stroke="hsl(var(--surface-3))" strokeWidth="3" />
-              <circle cx="50" cy="50" r="46" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"
-                strokeDasharray={`${2 * Math.PI * 46}`}
-                strokeDashoffset={`${2 * Math.PI * 46 * (1 - pct / 100)}`}
-                strokeLinecap="round" className="transition-all duration-1000" />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="font-display font-extrabold text-6xl tabular-nums">{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</div>
-              <div className="label-mono mt-2">{selected.label}</div>
-            </div>
-          </div>
+        <div className="surface p-10 lg:col-span-2 relative overflow-hidden">
+          {/* Ambient glow */}
+          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/10 blur-[120px] rounded-full" />
 
-          <div className="flex gap-3 mb-4">
-            <button onClick={() => setRunning(!running)} className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-md flex items-center gap-2 hover:bg-primary-glow min-w-[140px] justify-center">
-              {running ? <><Pause className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> Start</>}
-            </button>
-            <button onClick={reset} className="bg-surface-2 border border-border px-4 py-3 rounded-md" title="Reset (R)">
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button onClick={() => setAutoCycle(v => !v)}
-              className={`px-4 py-3 rounded-md border flex items-center gap-1.5 text-xs ${autoCycle ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2"}`}>
-              <Repeat className="w-3.5 h-3.5" /> Auto cycle
-            </button>
-            <button onClick={toggleNotify}
-              className={`px-4 py-3 rounded-md border flex items-center gap-1.5 text-xs ${notify ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2"}`}>
-              {notify ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-
-          <input value={goal} onChange={e => setGoal(e.target.value)} placeholder="Optional goal: e.g. Finish chapter 4 derivations"
-            className="w-full max-w-md bg-surface-2 border border-border rounded-md px-3 py-2 text-sm" />
-
-          <div className="grid grid-cols-3 gap-3 mt-5 w-full max-w-md">
-            <div className="bg-surface-2 border border-border rounded-md p-3 text-center">
-              <div className="label-mono">Today</div>
-              <div className="font-display font-bold text-xl">{todayStats?.sessions ?? 0}</div>
-              <div className="text-[10px] text-muted-foreground">sessions</div>
+          <div className="relative z-10 flex flex-col items-center">
+            {/* Header context */}
+            <div className="mb-10 text-center">
+              <span className="label-mono text-primary/80 mb-1.5 block">
+                {selected.type === "focus" ? "Deep Focus Mode" : "Break Mode"}
+              </span>
+              <h2 className="font-display text-3xl font-bold tracking-tight">{selected.label}</h2>
             </div>
-            <div className="bg-surface-2 border border-border rounded-md p-3 text-center">
-              <div className="label-mono">Minutes</div>
-              <div className="font-display font-bold text-xl">{todayStats?.minutes ?? 0}</div>
-              <div className="text-[10px] text-muted-foreground">today</div>
+
+            {/* Timer ring */}
+            <div className="relative w-80 h-80 flex items-center justify-center">
+              <svg className="absolute inset-0 w-full h-full -rotate-90">
+                <circle cx="50%" cy="50%" r="150" stroke="hsl(var(--surface-3))" strokeWidth="4" fill="transparent" />
+                <circle
+                  cx="50%" cy="50%" r="150"
+                  stroke="hsl(var(--primary))" strokeWidth="4" fill="transparent"
+                  strokeDasharray={2 * Math.PI * 150}
+                  strokeDashoffset={2 * Math.PI * 150 * (1 - pct / 100)}
+                  strokeLinecap="round"
+                  className="transition-all duration-1000 drop-shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
+                />
+              </svg>
+              <div className="text-center">
+                <div className="font-mono font-bold text-7xl tabular-nums tracking-tighter text-primary">
+                  {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+                </div>
+                <div className="label-mono mt-2 text-muted-foreground">
+                  {running ? "Remaining" : "Ready"}
+                </div>
+              </div>
             </div>
-            <div className="bg-surface-2 border border-border rounded-md p-3 text-center">
-              <div className="label-mono">Cycle</div>
-              <div className="font-display font-bold text-xl">{cycleCount}</div>
-              <div className="text-[10px] text-muted-foreground">completed</div>
+
+            {/* Mode pills */}
+            <div className="flex flex-wrap gap-2 justify-center mt-10">
+              {BUILTIN.map(p => (
+                <button key={p.label} onClick={() => choose(p)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all border ${
+                    selected.label === p.label
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-muted-foreground hover:border-muted-foreground"
+                  }`}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Controls */}
+            <div className="mt-10 flex items-center gap-8">
+              <button onClick={reset} title="Reset (R)"
+                className="w-12 h-12 flex items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-all">
+                <RotateCcw className="w-5 h-5" />
+              </button>
+
+              <button onClick={() => setRunning(!running)} className="relative group">
+                <div className="absolute -inset-1 bg-primary rounded-full blur opacity-20 group-hover:opacity-40 transition-opacity" />
+                <div className="relative w-20 h-20 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:scale-105 active:scale-95 transition-transform">
+                  {running ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+                </div>
+              </button>
+
+              <button onClick={toggleNotify} title="Notifications"
+                className={`w-12 h-12 flex items-center justify-center rounded-full border transition-all ${
+                  notify ? "border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                }`}>
+                {notify ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+              </button>
+
+              <button onClick={() => setAutoCycle(v => !v)} title="Auto cycle"
+                className={`w-12 h-12 flex items-center justify-center rounded-full border transition-all ${
+                  autoCycle ? "border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                }`}>
+                <Repeat className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Goal input */}
+            <input value={goal} onChange={e => setGoal(e.target.value)}
+              placeholder="Optional goal — e.g. Finish chapter 4 derivations"
+              className="w-full max-w-md mt-10 bg-surface-2 border border-border rounded-md px-3 py-2 text-sm text-center focus:outline-none focus:border-primary" />
+
+            {/* Footer stats */}
+            <div className="mt-10 w-full max-w-md pt-6 border-t border-border grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="label-mono text-muted-foreground">Sessions</div>
+                <div className="font-mono font-bold text-lg tabular-nums mt-1">{String(todayStats?.sessions ?? 0).padStart(2, "0")}</div>
+              </div>
+              <div className="text-center border-x border-border">
+                <div className="label-mono text-muted-foreground">Minutes</div>
+                <div className="font-mono font-bold text-lg tabular-nums mt-1">{todayStats?.minutes ?? 0}</div>
+              </div>
+              <div className="text-center">
+                <div className="label-mono text-muted-foreground">Cycle</div>
+                <div className="font-mono font-bold text-lg tabular-nums mt-1 text-primary">{String(cycleCount).padStart(2, "0")}</div>
+              </div>
             </div>
           </div>
         </div>
+
         ) : (
         <div className="surface p-8 lg:col-span-2 flex flex-col items-center">
           <div className="font-display font-extrabold text-7xl tabular-nums my-10 tracking-tight">
