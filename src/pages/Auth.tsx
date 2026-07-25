@@ -1,6 +1,7 @@
 import { useState, FormEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -53,13 +54,15 @@ export default function Auth() {
   const signInWithGoogle = async () => {
     setOauthLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
-      if (error) throw error;
+      if (result.error) throw result.error;
+      if (!result.redirected) {
+        navigate("/", { replace: true });
+      }
     } catch (err: any) {
-      toast.error(err.message ?? "Google sign-in failed. Make sure Google is enabled in backend settings.");
+      toast.error(err.message ?? "Google sign-in failed.");
       setOauthLoading(false);
     }
   };
