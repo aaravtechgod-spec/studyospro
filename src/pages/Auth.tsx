@@ -97,6 +97,11 @@ export default function Auth() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (mode === "forgot") return handleForgot(e);
+    if (mode === "signup" && !agreed) {
+      toast.error("Please agree to the Terms & Conditions to create an account.");
+      return;
+    }
+
 
     const parsed = authSchema.safeParse({ email, password, displayName });
     if (!parsed.success) {
