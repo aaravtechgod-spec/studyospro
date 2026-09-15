@@ -371,6 +371,42 @@ export type Database = {
         }
         Relationships: []
       }
+      career_progress: {
+        Row: {
+          completed_at: string
+          created_at: string
+          day_index: number
+          id: string
+          note: string | null
+          status: string
+          track: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          day_index: number
+          id?: string
+          note?: string | null
+          status?: string
+          track: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          day_index?: number
+          id?: string
+          note?: string | null
+          status?: string
+          track?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
