@@ -294,9 +294,26 @@ export default function Auth() {
                 )}
               </div>
             )}
+            {mode === "signup" && (
+              <label className="flex items-start gap-2.5 text-xs text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-primary cursor-pointer"
+                />
+                <span>
+                  I agree to the{" "}
+                  <Link to="/terms" target="_blank" className="text-primary hover:underline font-semibold">
+                    Terms &amp; Conditions
+                  </Link>
+                  . I'm 13 or older (and have a parent's OK if under 18).
+                </span>
+              </label>
+            )}
             <button
               type="submit"
-              disabled={loading || oauthLoading}
+              disabled={loading || oauthLoading || (mode === "signup" && !agreed)}
               className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-md hover:bg-primary-glow transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -316,7 +333,11 @@ export default function Auth() {
         </div>
 
         <p className="text-center text-[10px] text-muted-foreground mt-4">
-          By continuing, you agree to our terms.
+          By continuing, you agree to our{" "}
+          <Link to="/terms" className="text-primary hover:underline">
+            Terms &amp; Conditions
+          </Link>
+          .
         </p>
       </div>
     </div>
