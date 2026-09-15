@@ -1,5 +1,5 @@
 import { useState, FormEvent, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,6 +22,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -52,6 +53,10 @@ export default function Auth() {
   };
 
   const signInWithGoogle = async () => {
+    if (mode === "signup" && !agreed) {
+      toast.error("Please agree to the Terms & Conditions first.");
+      return;
+    }
     setOauthLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
