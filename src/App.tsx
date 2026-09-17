@@ -20,6 +20,9 @@ import AIMLCapstones from "./pages/AIMLCapstones";
 import Gamification from "./pages/Gamification";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import Careers from "./pages/Careers";
+import CareerTrack from "./pages/CareerTrack";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +37,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/terms" element={<Terms />} />
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/tasks" element={<Tasks mode="homework" />} />
@@ -46,6 +50,8 @@ const App = () => (
               <Route path="/coach" element={<Coach />} />
               <Route path="/aiml-roadmap" element={<AIMLRoadmap />} />
               <Route path="/aiml-capstones" element={<AIMLCapstones />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/careers/:slug" element={<CareerTrack />} />
               <Route path="/gamification" element={<Gamification />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
