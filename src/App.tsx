@@ -20,6 +20,9 @@ import AIMLCapstones from "./pages/AIMLCapstones";
 import Gamification from "./pages/Gamification";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import Careers from "./pages/Careers";
+import CareerTrack from "./pages/CareerTrack";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
