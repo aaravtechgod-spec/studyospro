@@ -28,6 +28,7 @@ const navItems = [
   { to: "/coach", icon: Bot, label: "AI Coach" },
   { to: "/aiml-roadmap", icon: Brain, label: "AI/ML Roadmap", badge: "NEW" },
   { to: "/aiml-capstones", icon: Trophy, label: "Capstones" },
+  { to: "/careers", icon: Compass, label: "Career Tracks", badge: "NEW" },
   { to: "/gamification", icon: Trophy, label: "XP & Badges" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
   { to: "/settings", icon: Settings, label: "Settings" },
