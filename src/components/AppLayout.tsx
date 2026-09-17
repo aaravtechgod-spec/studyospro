@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import {
   LayoutGrid, Calendar, ListChecks, FileText, Timer, CalendarDays,
   GraduationCap, Layers, Bot, Trophy, BarChart3, Settings, LogOut, Menu, Sparkles, Command as CommandIcon,
-  Brain,
+  Brain, Compass,
 } from "lucide-react";
 import { CoachChatProvider, useCoachChat } from "@/hooks/useCoachChat";
 import CoachPanel from "@/components/CoachPanel";
