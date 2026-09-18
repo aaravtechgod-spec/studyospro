@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAwardXp } from "@/hooks/useProfile";
 import { getTrack, trackDayCount } from "@/lib/careerRoadmaps";
 import { toast } from "sonner";
 import { ArrowLeft, Check, ChevronDown, Loader2 } from "lucide-react";
