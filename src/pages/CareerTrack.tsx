@@ -76,7 +76,11 @@ export default function CareerTrack() {
       const { error } = await supabase
         .from("career_progress")
         .insert({ user_id: user.id, track: track.slug, day_index: dayIndex });
-      if (error) { toast.error("Could not update."); setDone(done); }
+      if (error) { toast.error("Could not update."); setDone(done); return; }
+      try {
+        await awardXp.mutateAsync({ event_type: "career_day" });
+        toast.success("Day complete — XP earned!");
+      } catch { /* progress already saved */ }
     }
   };
 
