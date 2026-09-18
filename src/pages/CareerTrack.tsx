@@ -11,6 +11,7 @@ export default function CareerTrack() {
   const { slug } = useParams();
   const track = getTrack(slug);
   const { user } = useAuth();
+  const awardXp = useAwardXp();
   const [done, setDone] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [openPhase, setOpenPhase] = useState<string | null>(
