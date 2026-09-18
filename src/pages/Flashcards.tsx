@@ -171,12 +171,20 @@ export default function Flashcards() {
           title={deck?.name ?? "Deck"}
           subtitle={`${cards.length} cards · ${dueCount} due now`}
           action={
-            <button onClick={() => { setStudyMode(true); setStudyIdx(0); setShowBack(false); }} disabled={dueCount === 0}
-              className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm disabled:opacity-50">
-              Study {dueCount > 0 ? `(${dueCount})` : ""}
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setGenOpen(true)}
+                className="border border-primary text-primary font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/10">
+                <Sparkles className="w-4 h-4" /> AI cards
+              </button>
+              <button onClick={() => { setStudyMode(true); setStudyIdx(0); setShowBack(false); }} disabled={dueCount === 0}
+                className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm disabled:opacity-50">
+                Study {dueCount > 0 ? `(${dueCount})` : ""}
+              </button>
+            </div>
           }
         />
+        <FlashcardGenerator open={genOpen} onOpenChange={setGenOpen} deckId={activeDeck} />
+
 
         <div className="surface p-5 mb-5 space-y-3">
           <div className="label-mono">Add card</div>
