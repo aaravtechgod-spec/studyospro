@@ -215,7 +215,18 @@ export default function Flashcards() {
   // DECK LIST
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Flashcards" subtitle="Active recall + spaced repetition (SM-2)" />
+      <PageHeader
+        title="Flashcards"
+        subtitle="Active recall + spaced repetition (SM-2)"
+        action={
+          <button onClick={() => setGenOpen(true)}
+            className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary-glow">
+            <Sparkles className="w-4 h-4" /> Generate with AI
+          </button>
+        }
+      />
+
+      <FlashcardGenerator open={genOpen} onOpenChange={setGenOpen} onCreated={(id) => setActiveDeck(id)} />
 
       <div className="surface p-5 mb-5">
         <div className="flex flex-wrap gap-2 items-center">
@@ -223,6 +234,7 @@ export default function Flashcards() {
           <button onClick={() => createDeck.mutate()} className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2"><Plus className="w-4 h-4" /> Create deck</button>
         </div>
       </div>
+
 
       {decks.length === 0 ? (
         <EmptyState
