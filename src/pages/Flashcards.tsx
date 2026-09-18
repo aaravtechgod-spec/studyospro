@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAwardXp } from "@/hooks/useProfile";
 import { PageHeader, EmptyState } from "@/components/ui-kit";
 import { useState } from "react";
-import { Plus, Trash2, ChevronLeft } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, Sparkles } from "lucide-react";
+import FlashcardGenerator from "@/components/FlashcardGenerator";
 import { toast } from "sonner";
 import { addDays } from "date-fns";
 
@@ -35,6 +36,7 @@ export default function Flashcards() {
   const [newDeckName, setNewDeckName] = useState("");
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
+  const [genOpen, setGenOpen] = useState(false);
 
   const { data: decks = [] } = useQuery({
     queryKey: ["decks", user?.id],
@@ -169,12 +171,20 @@ export default function Flashcards() {
           title={deck?.name ?? "Deck"}
           subtitle={`${cards.length} cards · ${dueCount} due now`}
           action={
-            <button onClick={() => { setStudyMode(true); setStudyIdx(0); setShowBack(false); }} disabled={dueCount === 0}
-              className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm disabled:opacity-50">
-              Study {dueCount > 0 ? `(${dueCount})` : ""}
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setGenOpen(true)}
+                className="border border-primary text-primary font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/10">
+                <Sparkles className="w-4 h-4" /> AI cards
+              </button>
+              <button onClick={() => { setStudyMode(true); setStudyIdx(0); setShowBack(false); }} disabled={dueCount === 0}
+                className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm disabled:opacity-50">
+                Study {dueCount > 0 ? `(${dueCount})` : ""}
+              </button>
+            </div>
           }
         />
+        <FlashcardGenerator open={genOpen} onOpenChange={setGenOpen} deckId={activeDeck} />
+
 
         <div className="surface p-5 mb-5 space-y-3">
           <div className="label-mono">Add card</div>
@@ -205,7 +215,18 @@ export default function Flashcards() {
   // DECK LIST
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Flashcards" subtitle="Active recall + spaced repetition (SM-2)" />
+      <PageHeader
+        title="Flashcards"
+        subtitle="Active recall + spaced repetition (SM-2)"
+        action={
+          <button onClick={() => setGenOpen(true)}
+            className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary-glow">
+            <Sparkles className="w-4 h-4" /> Generate with AI
+          </button>
+        }
+      />
+
+      <FlashcardGenerator open={genOpen} onOpenChange={setGenOpen} onCreated={(id) => setActiveDeck(id)} />
 
       <div className="surface p-5 mb-5">
         <div className="flex flex-wrap gap-2 items-center">
@@ -213,6 +234,7 @@ export default function Flashcards() {
           <button onClick={() => createDeck.mutate()} className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-md text-sm flex items-center gap-2"><Plus className="w-4 h-4" /> Create deck</button>
         </div>
       </div>
+
 
       {decks.length === 0 ? (
         <EmptyState

@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { extractTextFromFile } from "@/lib/extractText";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Loader2, Sparkles, Upload, X } from "lucide-react";
+import { Check, FileText, Loader2, Sparkles, Upload, X } from "lucide-react";
 
 type Amount = "fewer" | "standard" | "more";
 type Difficulty = "easy" | "medium" | "hard";
@@ -193,52 +193,57 @@ export default function FlashcardGenerator({ open, onOpenChange, deckId, onCreat
             />
           </div>
 
-          {/* Number of cards */}
-          <div>
-            <div className="label-mono mb-2">Number of Cards</div>
-            <div className="grid grid-cols-3 gap-2">
-              {AMOUNTS.map((a) => (
-                <button
-                  key={a.key}
-                  onClick={() => setAmount(a.key)}
-                  aria-pressed={amount === a.key}
-                  className={`rounded-md border py-2.5 text-sm font-semibold transition-colors ${
-                    amount === a.key
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-surface-2 text-muted-foreground hover:border-primary/50"
-                  }`}
-                >
-                  {a.label}
-                  <span className="block text-[10px] font-normal opacity-70">{a.hint}</span>
-                </button>
-              ))}
+          <div className="grid gap-5 sm:grid-cols-2">
+            {/* Number of cards */}
+            <div>
+              <div className="text-sm font-medium mb-2">Number of Cards</div>
+              <div className="flex flex-wrap gap-2">
+                {AMOUNTS.map((a) => (
+                  <button
+                    key={a.key}
+                    onClick={() => setAmount(a.key)}
+                    aria-pressed={amount === a.key}
+                    title={a.hint}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${
+                      amount === a.key
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border bg-surface-2 text-muted-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    {amount === a.key && <Check className="w-3.5 h-3.5" />}
+                    {a.label}{a.key === "standard" ? " (Default)" : ""}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Difficulty */}
+            <div>
+              <div className="text-sm font-medium mb-2">Level of Difficulty</div>
+              <div className="flex flex-wrap gap-2">
+                {DIFFICULTIES.map((d) => (
+                  <button
+                    key={d.key}
+                    onClick={() => setDifficulty(d.key)}
+                    aria-pressed={difficulty === d.key}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${
+                      difficulty === d.key
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border bg-surface-2 text-muted-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    {difficulty === d.key && <Check className="w-3.5 h-3.5" />}
+                    {d.label}{d.key === "medium" ? " (Default)" : ""}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Difficulty */}
-          <div>
-            <div className="label-mono mb-2">Level of Difficulty</div>
-            <div className="grid grid-cols-3 gap-2">
-              {DIFFICULTIES.map((d) => (
-                <button
-                  key={d.key}
-                  onClick={() => setDifficulty(d.key)}
-                  aria-pressed={difficulty === d.key}
-                  className={`rounded-md border py-2.5 text-sm font-semibold transition-colors ${
-                    difficulty === d.key
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-surface-2 text-muted-foreground hover:border-primary/50"
-                  }`}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Topic */}
           <div>
-            <div className="label-mono mb-2">What should the cards cover?</div>
+            <div className="text-sm font-medium mb-2">What should the topic be?</div>
             <textarea
               value={topic}
               onChange={(e) => setTopic(e.target.value)}

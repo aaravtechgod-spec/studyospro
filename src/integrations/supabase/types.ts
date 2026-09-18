@@ -892,6 +892,7 @@ export type Database = {
           xp: number
         }[]
       }
+      streak_multiplier: { Args: { _streak: number }; Returns: number }
     }
     Enums: {
       [_ in never]: never
