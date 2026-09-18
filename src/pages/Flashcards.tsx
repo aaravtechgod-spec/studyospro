@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAwardXp } from "@/hooks/useProfile";
 import { PageHeader, EmptyState } from "@/components/ui-kit";
 import { useState } from "react";
-import { Plus, Trash2, ChevronLeft } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, Sparkles } from "lucide-react";
+import FlashcardGenerator from "@/components/FlashcardGenerator";
 import { toast } from "sonner";
 import { addDays } from "date-fns";
 
@@ -35,6 +36,7 @@ export default function Flashcards() {
   const [newDeckName, setNewDeckName] = useState("");
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
+  const [genOpen, setGenOpen] = useState(false);
 
   const { data: decks = [] } = useQuery({
     queryKey: ["decks", user?.id],
