@@ -243,7 +243,7 @@ export default function FlashcardGenerator({ open, onOpenChange, deckId, onCreat
 
           {/* Topic */}
           <div>
-            <div className="label-mono mb-2">What should the cards cover?</div>
+            <div className="text-sm font-medium mb-2">What should the topic be?</div>
             <textarea
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
