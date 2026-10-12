@@ -574,6 +574,7 @@ export type Database = {
           completed: boolean
           created_at: string
           duration_minutes: number
+          duration_seconds: number | null
           id: string
           session_type: string
           started_at: string
@@ -584,6 +585,7 @@ export type Database = {
           completed?: boolean
           created_at?: string
           duration_minutes: number
+          duration_seconds?: number | null
           id?: string
           session_type?: string
           started_at?: string
@@ -594,6 +596,7 @@ export type Database = {
           completed?: boolean
           created_at?: string
           duration_minutes?: number
+          duration_seconds?: number | null
           id?: string
           session_type?: string
           started_at?: string

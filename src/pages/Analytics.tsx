@@ -19,6 +19,9 @@ const fmtDuration = (minutes: number) => {
 export default function Analytics() {
   const { user } = useAuth();
 
+  const sessionSeconds = (session: { duration_minutes: number; duration_seconds?: number | null }) =>
+    session.duration_seconds ?? session.duration_minutes * 60;
+
   const { data } = useQuery({
     queryKey: ["analytics", user?.id],
     enabled: !!user,
@@ -43,7 +46,7 @@ export default function Analytics() {
     const key = format(d, "yyyy-MM-dd");
     const studyMin = study
       .filter(f => startOfDay(parseISO(f.started_at)).getTime() === startOfDay(d).getTime())
-      .reduce((s, r) => s + r.duration_minutes, 0);
+    .reduce((s, r) => s + sessionSeconds(r), 0) / 60;
     return {
       day: format(d, "MMM d"),
       study: studyMin,
@@ -53,10 +56,11 @@ export default function Analytics() {
 
   const today = new Date();
   const todayKey = format(today, "yyyy-MM-dd");
-  const todayStudy = study.filter(f => isSameDay(parseISO(f.started_at), today)).reduce((s, r) => s + r.duration_minutes, 0);
+  const todayStudy = study.filter(f => isSameDay(parseISO(f.started_at), today))
+    .reduce((s, r) => s + sessionSeconds(r), 0) / 60;
   const todayOnSite = Math.round((usage[todayKey] ?? 0) / 60);
 
-  const totalStudy = study.reduce((s, r) => s + r.duration_minutes, 0);
+  const totalStudy = study.reduce((s, r) => s + sessionSeconds(r), 0) / 60;
   const totalOnSite = days.reduce((s, d) => s + (usage[format(d, "yyyy-MM-dd")] ?? 0), 0) / 60;
   const activeDays = days.filter((d, i) => daily[i].study > 0).length;
   const bestDay = daily.reduce((best, d) => (d.study > best.study ? d : best), daily[0] ?? { day: "—", study: 0, onSite: 0 });
@@ -68,8 +72,9 @@ export default function Analytics() {
   (data?.subjects ?? []).forEach((s: any) => { subjectMap[s.id] = { name: s.name, color: s.color, minutes: 0 }; });
   let unassigned = 0;
   study.forEach(f => {
-    if (f.subject_id && subjectMap[f.subject_id]) subjectMap[f.subject_id].minutes += f.duration_minutes;
-    else unassigned += f.duration_minutes;
+    const minutes = sessionSeconds(f) / 60;
+    if (f.subject_id && subjectMap[f.subject_id]) subjectMap[f.subject_id].minutes += minutes;
+    else unassigned += minutes;
   });
   const pieData = Object.values(subjectMap).filter(s => s.minutes > 0);
   if (unassigned > 0) pieData.push({ name: "Unassigned", color: "hsl(var(--muted-foreground))", minutes: unassigned });
