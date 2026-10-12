@@ -42,6 +42,9 @@ export default function Timer() {
   const [customMin, setCustomMin] = useState(30);
   const [presetLabel, setPresetLabel] = useState("");
   const intervalRef = useRef<number | null>(null);
+  const timerEndRef = useRef<number | null>(null);
+  const timerStartedAtRef = useRef<string | null>(null);
+  const completeRef = useRef<() => void>(() => {});
 
   // Stopwatch state
   const [mode, setMode] = useState<"timer" | "stopwatch">("timer");
@@ -50,23 +53,41 @@ export default function Timer() {
   const [laps, setLaps] = useState<number[]>([]);
   const swStartRef = useRef<number | null>(null);
   const swBaseRef = useRef(0);
-  const swRafRef = useRef<number | null>(null);
+  const swIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!swRunning) return;
-    swStartRef.current = performance.now();
     const tick = () => {
-      setSwMs(swBaseRef.current + (performance.now() - (swStartRef.current ?? 0)));
-      swRafRef.current = requestAnimationFrame(tick);
+      setSwMs(swBaseRef.current + (Date.now() - (swStartRef.current ?? Date.now())));
     };
-    swRafRef.current = requestAnimationFrame(tick);
+    tick();
+    swIntervalRef.current = window.setInterval(tick, 250);
+    document.addEventListener("visibilitychange", tick);
     return () => {
-      if (swRafRef.current) cancelAnimationFrame(swRafRef.current);
-      swBaseRef.current += performance.now() - (swStartRef.current ?? performance.now());
+      if (swIntervalRef.current !== null) window.clearInterval(swIntervalRef.current);
+      document.removeEventListener("visibilitychange", tick);
     };
   }, [swRunning]);
 
-  const swReset = () => { setSwRunning(false); setSwMs(0); swBaseRef.current = 0; setLaps([]); };
+  const swReset = () => {
+    setSwRunning(false);
+    setSwMs(0);
+    swBaseRef.current = 0;
+    swStartRef.current = null;
+    setLaps([]);
+  };
+  const toggleStopwatch = () => {
+    if (swRunning) {
+      const elapsed = swBaseRef.current + (Date.now() - (swStartRef.current ?? Date.now()));
+      swBaseRef.current = elapsed;
+      setSwMs(elapsed);
+      swStartRef.current = null;
+      setSwRunning(false);
+    } else {
+      swStartRef.current = Date.now();
+      setSwRunning(true);
+    }
+  };
   const swLap = () => setLaps(ls => [swMs, ...ls]);
   const fmtSw = (ms: number) => {
     const totalCs = Math.floor(ms / 10);
@@ -84,17 +105,23 @@ export default function Timer() {
 
   const saveStopwatchSession = async () => {
     if (!user) return;
-    const minutes = Math.round(swMs / 60000);
-    if (minutes < 1) { toast.error("Less than a minute — nothing to save"); return; }
+    const elapsedMs = swRunning ? swBaseRef.current + (Date.now() - (swStartRef.current ?? Date.now())) : swMs;
+    const seconds = Math.floor(elapsedMs / 1000);
+    const minutes = Math.max(1, Math.round(seconds / 60));
+    if (seconds < 60) { toast.error("Less than a minute — nothing to save"); return; }
     const { data: inserted, error } = await supabase.from("focus_sessions").insert({
       user_id: user.id,
       duration_minutes: minutes,
+      duration_seconds: seconds,
       session_type: "focus",
       subject_id: subjectId || null,
+      started_at: new Date(Date.now() - elapsedMs).toISOString(),
     }).select("id").single();
     if (error) { toast.error(error.message); return; }
-    const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted!.id });
+    if (!inserted) { toast.error("Could not save this session"); return; }
+    const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted.id });
     qc.invalidateQueries({ queryKey: ["focus_today"] });
+    qc.invalidateQueries({ queryKey: ["analytics"] });
     toast.success(`Saved ${minutes} min`, { description: `Total XP: ${result?.xp ?? ""}` });
     swReset();
   };
@@ -117,28 +144,36 @@ export default function Timer() {
     queryFn: async () => {
       const start = startOfDay(new Date()).toISOString();
       const end = endOfDay(new Date()).toISOString();
-      const { data } = await supabase.from("focus_sessions").select("duration_minutes, session_type")
+      const { data } = await supabase.from("focus_sessions").select("duration_minutes, duration_seconds, session_type")
         .eq("user_id", user!.id).gte("started_at", start).lte("started_at", end);
       const focus = (data ?? []).filter(s => s.session_type === "focus");
-      return { sessions: focus.length, minutes: focus.reduce((a, s) => a + s.duration_minutes, 0) };
+      return {
+        sessions: focus.length,
+        minutes: Math.floor(focus.reduce((a, s) => a + (s.duration_seconds ?? s.duration_minutes * 60), 0) / 60),
+      };
     },
   });
 
   useEffect(() => {
     if (!running) return;
-    intervalRef.current = window.setInterval(() => {
-      setSecondsLeft(s => {
-        if (s <= 1) {
-          window.clearInterval(intervalRef.current!);
-          setRunning(false);
-          handleComplete();
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => { if (intervalRef.current) window.clearInterval(intervalRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const tick = () => {
+      const endAt = timerEndRef.current;
+      if (endAt === null) return;
+      const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (remaining === 0) {
+        timerEndRef.current = null;
+        setRunning(false);
+        completeRef.current();
+      }
+    };
+    tick();
+    intervalRef.current = window.setInterval(tick, 250);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [running]);
 
   // Keyboard shortcuts
@@ -146,12 +181,17 @@ export default function Timer() {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (e.code === "Space") { e.preventDefault(); setRunning(r => !r); }
-      else if (e.key.toLowerCase() === "r") { setRunning(false); setSecondsLeft(selected.min * 60); }
+       if (e.code === "Space") { e.preventDefault(); toggleTimer(); }
+       else if (e.key.toLowerCase() === "r") {
+         setRunning(false);
+         timerEndRef.current = null;
+         timerStartedAtRef.current = null;
+         setSecondsLeft(selected.min * 60);
+       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selected]);
+  }, [selected, running, secondsLeft]);
 
   const notifyDone = (msg: string) => {
     beep();
@@ -162,15 +202,20 @@ export default function Timer() {
 
   const handleComplete = async () => {
     if (selected.type === "focus") {
+      const startedAt = timerStartedAtRef.current ?? new Date(Date.now() - selected.min * 60_000).toISOString();
       const { data: inserted, error: insErr } = await supabase.from("focus_sessions").insert({
         user_id: user!.id,
         duration_minutes: selected.min,
+        duration_seconds: selected.min * 60,
         session_type: "focus",
         subject_id: subjectId || null,
+        started_at: startedAt,
       }).select("id").single();
       if (insErr) { toast.error(insErr.message); return; }
-      const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted!.id });
+      if (!inserted) { toast.error("Could not save this session"); return; }
+      const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted.id });
       qc.invalidateQueries({ queryKey: ["focus_today"] });
+      qc.invalidateQueries({ queryKey: ["analytics"] });
       const goalNote = goal ? ` · "${goal}"` : "";
       toast.success(`Session complete!`, { description: `${selected.min} min${goalNote} · Total XP: ${result?.xp ?? ""}` });
       notifyDone(`Focus done — ${selected.min} min`);
@@ -180,20 +225,53 @@ export default function Timer() {
           ? { label: "Long break 15", min: 15, type: "break" as const }
           : { label: "Short break 5", min: 5, type: "break" as const };
         setCycleCount(c => c + 1);
-        setSelected(next); setSecondsLeft(next.min * 60); setRunning(true);
+        setSelected(next);
+        setSecondsLeft(next.min * 60);
+        timerStartedAtRef.current = null;
+        timerEndRef.current = Date.now() + next.min * 60_000;
+        setRunning(true);
+      } else {
+        timerStartedAtRef.current = null;
       }
     } else {
       toast.success("Break done!");
       notifyDone("Break over — back to focus");
       if (autoCycle) {
         const focus = { label: "Focus 25", min: 25, type: "focus" as const };
-        setSelected(focus); setSecondsLeft(focus.min * 60); setRunning(true);
+        setSelected(focus);
+        setSecondsLeft(focus.min * 60);
+        timerStartedAtRef.current = new Date().toISOString();
+        timerEndRef.current = Date.now() + focus.min * 60_000;
+        setRunning(true);
       }
     }
     setGoal("");
   };
 
-  const choose = (p: Preset) => { setRunning(false); setSelected(p); setSecondsLeft(p.min * 60); };
+  completeRef.current = handleComplete;
+
+  const toggleTimer = () => {
+    if (running) {
+      const remaining = timerEndRef.current === null
+        ? secondsLeft
+        : Math.max(0, Math.ceil((timerEndRef.current - Date.now()) / 1000));
+      timerEndRef.current = null;
+      setSecondsLeft(remaining);
+      setRunning(false);
+    } else if (secondsLeft > 0) {
+      timerStartedAtRef.current ??= new Date().toISOString();
+      timerEndRef.current = Date.now() + secondsLeft * 1000;
+      setRunning(true);
+    }
+  };
+
+  const choose = (p: Preset) => {
+    setRunning(false);
+    timerEndRef.current = null;
+    timerStartedAtRef.current = null;
+    setSelected(p);
+    setSecondsLeft(p.min * 60);
+  };
 
   const useCustom = () => {
     const min = Math.max(1, Math.min(240, customMin));
@@ -217,7 +295,12 @@ export default function Timer() {
     qc.invalidateQueries({ queryKey: ["timer_presets"] });
   };
 
-  const reset = () => { setRunning(false); setSecondsLeft(selected.min * 60); };
+  const reset = () => {
+    setRunning(false);
+    timerEndRef.current = null;
+    timerStartedAtRef.current = null;
+    setSecondsLeft(selected.min * 60);
+  };
   const toggleNotify = async () => {
     if (!notify && "Notification" in window) {
       const p = await Notification.requestPermission();
@@ -303,7 +386,7 @@ export default function Timer() {
                 <RotateCcw className="w-5 h-5" />
               </button>
 
-              <button onClick={() => setRunning(!running)} className="relative group">
+              <button onClick={toggleTimer} className="relative group">
                 <div className="absolute -inset-1 bg-primary rounded-full blur opacity-20 group-hover:opacity-40 transition-opacity" />
                 <div className="relative w-20 h-20 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:scale-105 active:scale-95 transition-transform">
                   {running ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
@@ -354,7 +437,7 @@ export default function Timer() {
             {fmtSw(swMs)}
           </div>
           <div className="flex gap-3 mb-6">
-            <button onClick={() => setSwRunning(r => !r)}
+            <button onClick={toggleStopwatch}
               className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-md flex items-center gap-2 hover:bg-primary-glow min-w-[140px] justify-center">
               {swRunning ? <><Pause className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> Start</>}
             </button>
