@@ -107,7 +107,7 @@ export default function Timer() {
       startedAt: timerStartedAtRef.current,
     };
     try { localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state)); } catch { /* storage unavailable */ }
-  }, [user?.id, selected, secondsLeft, running]);
+  }, [user?.id, selected, running]);
 
   useEffect(() => {
     if (!user) return;
@@ -296,6 +296,8 @@ export default function Timer() {
         timerStartedAtRef.current = new Date().toISOString();
         timerEndRef.current = Date.now() + focus.min * 60_000;
         setRunning(true);
+      } else {
+        try { localStorage.removeItem(TIMER_STATE_KEY); } catch { /* storage unavailable */ }
       }
     }
     setGoal("");
