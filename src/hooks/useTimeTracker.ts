@@ -21,6 +21,7 @@ function writeUsage(map: UsageMap) {
     const trimmed: UsageMap = {};
     keys.slice(-KEEP_DAYS).forEach(k => { trimmed[k] = map[k]; });
     localStorage.setItem(KEY, JSON.stringify(trimmed));
+    window.dispatchEvent(new Event("studyos:usage-updated"));
   } catch {
     /* storage unavailable — tracking is best-effort */
   }
@@ -38,8 +39,9 @@ export function addUsageSeconds(seconds: number) {
  * Tracks how long the app is actually open and focused.
  * Uses wall-clock deltas, so backgrounded tabs never inflate the total.
  */
-export function useTimeTracker() {
+export function useTimeTracker(enabled = true) {
   useEffect(() => {
+    if (!enabled) return;
     let last = Date.now();
 
     const isActive = () => document.visibilityState === "visible" && document.hasFocus();
@@ -68,5 +70,5 @@ export function useTimeTracker() {
       window.removeEventListener("focus", resume);
       window.removeEventListener("beforeunload", flush);
     };
-  }, []);
+  }, [enabled]);
 }

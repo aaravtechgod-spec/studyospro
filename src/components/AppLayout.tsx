@@ -12,6 +12,7 @@ import CoachPanel from "@/components/CoachPanel";
 import CommandPalette from "@/components/CommandPalette";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTheme } from "@/hooks/useTheme";
+import { useTimeTracker } from "@/hooks/useTimeTracker";
 
 // Routes where the floating "Ask Coach" button is shown.
 const COACH_ROUTES = ["/notes", "/tasks", "/exams", "/timer"];
@@ -127,6 +128,7 @@ function AppLayoutInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const { sidebarOpen, openSidebar, setContext } = useCoachChat();
+  useTimeTracker(!!user && !loading);
   useTheme(); // ensures the html.light class reflects profile.theme
 
   useEffect(() => {
