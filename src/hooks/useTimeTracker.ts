@@ -45,16 +45,18 @@ export function useTimeTracker(enabled = true) {
     let last = Date.now();
 
     const isActive = () => document.visibilityState === "visible" && document.hasFocus();
+    let wasActive = isActive();
 
     const flush = () => {
       const now = Date.now();
       const delta = now - last;
       last = now;
       // Ignore absurd gaps (machine asleep) and inactive stretches.
-      if (isActive() && delta > 0 && delta < 2 * 60 * 1000) addUsageSeconds(delta / 1000);
+      if (wasActive && delta > 0 && delta < 2 * 60 * 1000) addUsageSeconds(delta / 1000);
+      wasActive = isActive();
     };
 
-    const resume = () => { last = Date.now(); };
+    const resume = () => { last = Date.now(); wasActive = isActive(); };
 
     const id = window.setInterval(flush, 15000);
     document.addEventListener("visibilitychange", flush);

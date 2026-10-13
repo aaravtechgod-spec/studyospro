@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader, StatCard } from "@/components/ui-kit";
@@ -18,6 +18,7 @@ const fmtDuration = (minutes: number) => {
 
 export default function Analytics() {
   const { user } = useAuth();
+  const qc = useQueryClient();
 
   const sessionSeconds = (session: { duration_minutes: number; duration_seconds?: number | null }) =>
     session.duration_seconds ?? session.duration_minutes * 60;
@@ -40,13 +41,16 @@ export default function Analytics() {
 
   useEffect(() => {
     const refreshUsage = () => setUsage(readUsage());
+    const refreshSessions = () => { void qc.invalidateQueries({ queryKey: ["analytics", user?.id] }); };
     window.addEventListener("studyos:usage-updated", refreshUsage);
     window.addEventListener("storage", refreshUsage);
+    window.addEventListener("studyos:focus-session-saved", refreshSessions);
     return () => {
       window.removeEventListener("studyos:usage-updated", refreshUsage);
       window.removeEventListener("storage", refreshUsage);
+      window.removeEventListener("studyos:focus-session-saved", refreshSessions);
     };
-  }, []);
+  }, [qc, user?.id]);
 
   // Only real study time (timer + stopwatch sessions), breaks excluded.
   const study = (data?.focus ?? []).filter(f => (f.session_type ?? "focus") === "focus");

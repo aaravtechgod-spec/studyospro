@@ -285,6 +285,7 @@ export default function Timer() {
         setRunning(true);
       } else {
         timerStartedAtRef.current = null;
+        try { localStorage.removeItem(TIMER_STATE_KEY); } catch { /* storage unavailable */ }
       }
     } else {
       toast.success("Break done!");
