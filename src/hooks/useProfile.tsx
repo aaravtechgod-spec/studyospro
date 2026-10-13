@@ -45,7 +45,8 @@ export const useProfile = () => {
 export type XpEvent =
   | { event_type: "task_complete"; ref_id: string }
   | { event_type: "flashcard_review" }
-  | { event_type: "focus_session"; ref_id: string };
+  | { event_type: "focus_session"; ref_id: string }
+  | { event_type: "career_day" };
 
 export const useAwardXp = () => {
   const qc = useQueryClient();
