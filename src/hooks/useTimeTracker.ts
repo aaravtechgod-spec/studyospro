@@ -21,6 +21,7 @@ function writeUsage(map: UsageMap) {
     const trimmed: UsageMap = {};
     keys.slice(-KEEP_DAYS).forEach(k => { trimmed[k] = map[k]; });
     localStorage.setItem(KEY, JSON.stringify(trimmed));
+    window.dispatchEvent(new Event("studyos:usage-updated"));
   } catch {
     /* storage unavailable — tracking is best-effort */
   }
@@ -38,21 +39,24 @@ export function addUsageSeconds(seconds: number) {
  * Tracks how long the app is actually open and focused.
  * Uses wall-clock deltas, so backgrounded tabs never inflate the total.
  */
-export function useTimeTracker() {
+export function useTimeTracker(enabled = true) {
   useEffect(() => {
+    if (!enabled) return;
     let last = Date.now();
 
     const isActive = () => document.visibilityState === "visible" && document.hasFocus();
+    let wasActive = isActive();
 
     const flush = () => {
       const now = Date.now();
       const delta = now - last;
       last = now;
       // Ignore absurd gaps (machine asleep) and inactive stretches.
-      if (isActive() && delta > 0 && delta < 2 * 60 * 1000) addUsageSeconds(delta / 1000);
+      if (wasActive && delta > 0 && delta < 2 * 60 * 1000) addUsageSeconds(delta / 1000);
+      wasActive = isActive();
     };
 
-    const resume = () => { last = Date.now(); };
+    const resume = () => { last = Date.now(); wasActive = isActive(); };
 
     const id = window.setInterval(flush, 15000);
     document.addEventListener("visibilitychange", flush);
@@ -68,5 +72,5 @@ export function useTimeTracker() {
       window.removeEventListener("focus", resume);
       window.removeEventListener("beforeunload", flush);
     };
-  }, []);
+  }, [enabled]);
 }

@@ -1,9 +1,9 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader, StatCard } from "@/components/ui-kit";
-import { readUsage } from "@/hooks/useTimeTracker";
+import { readUsage, type UsageMap } from "@/hooks/useTimeTracker";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   PieChart, Pie, Cell, AreaChart, Area,
@@ -18,6 +18,7 @@ const fmtDuration = (minutes: number) => {
 
 export default function Analytics() {
   const { user } = useAuth();
+  const qc = useQueryClient();
 
   const sessionSeconds = (session: { duration_minutes: number; duration_seconds?: number | null }) =>
     session.duration_seconds ?? session.duration_minutes * 60;
@@ -28,7 +29,7 @@ export default function Analytics() {
     queryFn: async () => {
       const since = subDays(new Date(), 30).toISOString();
       const [focusRes, tasksRes, subjectsRes] = await Promise.all([
-        supabase.from("focus_sessions").select("duration_minutes,started_at,subject_id,session_type").eq("user_id", user!.id).gte("started_at", since),
+        supabase.from("focus_sessions").select("duration_minutes,duration_seconds,started_at,subject_id,session_type").eq("user_id", user!.id).gte("started_at", since),
         supabase.from("tasks").select("status,completed_at,subject_id").eq("user_id", user!.id),
         supabase.from("subjects").select("id,name,color").eq("user_id", user!.id),
       ]);
@@ -36,10 +37,23 @@ export default function Analytics() {
     },
   });
 
-  const usage = useMemo(() => readUsage(), []);
+  const [usage, setUsage] = useState<UsageMap>(() => readUsage());
+
+  useEffect(() => {
+    const refreshUsage = () => setUsage(readUsage());
+    const refreshSessions = () => { void qc.invalidateQueries({ queryKey: ["analytics", user?.id] }); };
+    window.addEventListener("studyos:usage-updated", refreshUsage);
+    window.addEventListener("storage", refreshUsage);
+    window.addEventListener("studyos:focus-session-saved", refreshSessions);
+    return () => {
+      window.removeEventListener("studyos:usage-updated", refreshUsage);
+      window.removeEventListener("storage", refreshUsage);
+      window.removeEventListener("studyos:focus-session-saved", refreshSessions);
+    };
+  }, [qc, user?.id]);
 
   // Only real study time (timer + stopwatch sessions), breaks excluded.
-  const study = (data?.focus ?? []).filter((f: any) => (f.session_type ?? "focus") === "focus");
+  const study = (data?.focus ?? []).filter(f => (f.session_type ?? "focus") === "focus");
 
   const days = Array.from({ length: 14 }, (_, i) => subDays(new Date(), 13 - i));
   const daily = days.map(d => {
@@ -69,7 +83,7 @@ export default function Analytics() {
 
   // Subject breakdown
   const subjectMap: Record<string, { name: string; color: string; minutes: number }> = {};
-  (data?.subjects ?? []).forEach((s: any) => { subjectMap[s.id] = { name: s.name, color: s.color, minutes: 0 }; });
+  (data?.subjects ?? []).forEach(s => { subjectMap[s.id] = { name: s.name, color: s.color, minutes: 0 }; });
   let unassigned = 0;
   study.forEach(f => {
     const minutes = sessionSeconds(f) / 60;

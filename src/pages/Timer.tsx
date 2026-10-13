@@ -9,6 +9,20 @@ import { toast } from "sonner";
 import { format, startOfDay, endOfDay } from "date-fns";
 
 type Preset = { label: string; min: number; type: "focus" | "break"; id?: string };
+type SavedTimerState = { userId: string; label: string; min: number; type: Preset["type"]; secondsLeft: number; running: boolean; endsAt: number | null; startedAt: string | null };
+type SavedStopwatchState = { userId: string; elapsedMs: number; runningSince: number | null };
+const TIMER_STATE_KEY = "studyos:timer-state-v1";
+const STOPWATCH_STATE_KEY = "studyos:stopwatch-state-v1";
+
+function readSavedState<T extends { userId: string }>(key: string, userId?: string): T | null {
+  if (!userId) return null;
+  try {
+    const state = JSON.parse(localStorage.getItem(key) ?? "null") as T | null;
+    return state?.userId === userId ? state : null;
+  } catch {
+    return null;
+  }
+}
 const BUILTIN: Preset[] = [
   { label: "Focus 25", min: 25, type: "focus" },
   { label: "Short break 5", min: 5, type: "break" },
@@ -31,9 +45,17 @@ export default function Timer() {
   const { user } = useAuth();
   const awardXp = useAwardXp();
   const qc = useQueryClient();
-  const [selected, setSelected] = useState<Preset>(BUILTIN[0]);
-  const [secondsLeft, setSecondsLeft] = useState(BUILTIN[0].min * 60);
-  const [running, setRunning] = useState(false);
+  const [savedTimer] = useState(() => readSavedState<SavedTimerState>(TIMER_STATE_KEY, user?.id));
+  const [savedStopwatch] = useState(() => readSavedState<SavedStopwatchState>(STOPWATCH_STATE_KEY, user?.id));
+  const initialPreset: Preset = savedTimer
+    ? { label: savedTimer.label, min: savedTimer.min, type: savedTimer.type }
+    : BUILTIN[0];
+  const restoredTimerRunning = savedTimer?.running ?? false;
+  const [selected, setSelected] = useState<Preset>(initialPreset);
+  const [secondsLeft, setSecondsLeft] = useState(restoredTimerRunning && savedTimer?.endsAt !== null
+    ? Math.max(0, Math.ceil(((savedTimer?.endsAt ?? 0) - Date.now()) / 1000))
+    : savedTimer?.secondsLeft ?? initialPreset.min * 60);
+  const [running, setRunning] = useState(restoredTimerRunning);
   const [subjectId, setSubjectId] = useState<string>("");
   const [goal, setGoal] = useState("");
   const [autoCycle, setAutoCycle] = useState(false);
@@ -42,17 +64,18 @@ export default function Timer() {
   const [customMin, setCustomMin] = useState(30);
   const [presetLabel, setPresetLabel] = useState("");
   const intervalRef = useRef<number | null>(null);
-  const timerEndRef = useRef<number | null>(null);
-  const timerStartedAtRef = useRef<string | null>(null);
+  const timerEndRef = useRef<number | null>(restoredTimerRunning ? savedTimer?.endsAt ?? null : null);
+  const timerStartedAtRef = useRef<string | null>(savedTimer?.startedAt ?? null);
   const completeRef = useRef<() => void>(() => {});
 
   // Stopwatch state
   const [mode, setMode] = useState<"timer" | "stopwatch">("timer");
-  const [swMs, setSwMs] = useState(0);
-  const [swRunning, setSwRunning] = useState(false);
+  const restoredSwMs = (savedStopwatch?.elapsedMs ?? 0) + (savedStopwatch?.runningSince ? Date.now() - savedStopwatch.runningSince : 0);
+  const [swMs, setSwMs] = useState(restoredSwMs);
+  const [swRunning, setSwRunning] = useState(!!savedStopwatch?.runningSince);
   const [laps, setLaps] = useState<number[]>([]);
-  const swStartRef = useRef<number | null>(null);
-  const swBaseRef = useRef(0);
+  const swStartRef = useRef<number | null>(savedStopwatch?.runningSince ?? null);
+  const swBaseRef = useRef(savedStopwatch?.elapsedMs ?? 0);
   const swIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -69,12 +92,40 @@ export default function Timer() {
     };
   }, [swRunning]);
 
+  useEffect(() => {
+    if (!user) return;
+    const state: SavedTimerState = {
+      userId: user.id,
+      label: selected.label,
+      min: selected.min,
+      type: selected.type,
+      secondsLeft: running && timerEndRef.current !== null
+        ? Math.max(0, Math.ceil((timerEndRef.current - Date.now()) / 1000))
+        : secondsLeft,
+      running,
+      endsAt: running ? timerEndRef.current : null,
+      startedAt: timerStartedAtRef.current,
+    };
+    try { localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state)); } catch { /* storage unavailable */ }
+  }, [user?.id, selected, running]);
+
+  useEffect(() => {
+    if (!user) return;
+    const state: SavedStopwatchState = {
+      userId: user.id,
+      elapsedMs: swBaseRef.current,
+      runningSince: swRunning ? swStartRef.current : null,
+    };
+    try { localStorage.setItem(STOPWATCH_STATE_KEY, JSON.stringify(state)); } catch { /* storage unavailable */ }
+  }, [user?.id, swRunning]);
+
   const swReset = () => {
     setSwRunning(false);
     setSwMs(0);
     swBaseRef.current = 0;
     swStartRef.current = null;
     setLaps([]);
+    try { localStorage.removeItem(STOPWATCH_STATE_KEY); } catch { /* storage unavailable */ }
   };
   const toggleStopwatch = () => {
     if (swRunning) {
@@ -122,6 +173,7 @@ export default function Timer() {
     const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted.id });
     qc.invalidateQueries({ queryKey: ["focus_today"] });
     qc.invalidateQueries({ queryKey: ["analytics"] });
+    window.dispatchEvent(new Event("studyos:focus-session-saved"));
     toast.success(`Saved ${minutes} min`, { description: `Total XP: ${result?.xp ?? ""}` });
     swReset();
   };
@@ -216,6 +268,7 @@ export default function Timer() {
       const result = await awardXp.mutateAsync({ event_type: "focus_session", ref_id: inserted.id });
       qc.invalidateQueries({ queryKey: ["focus_today"] });
       qc.invalidateQueries({ queryKey: ["analytics"] });
+      window.dispatchEvent(new Event("studyos:focus-session-saved"));
       const goalNote = goal ? ` · "${goal}"` : "";
       toast.success(`Session complete!`, { description: `${selected.min} min${goalNote} · Total XP: ${result?.xp ?? ""}` });
       notifyDone(`Focus done — ${selected.min} min`);
@@ -232,6 +285,7 @@ export default function Timer() {
         setRunning(true);
       } else {
         timerStartedAtRef.current = null;
+        try { localStorage.removeItem(TIMER_STATE_KEY); } catch { /* storage unavailable */ }
       }
     } else {
       toast.success("Break done!");
@@ -243,6 +297,8 @@ export default function Timer() {
         timerStartedAtRef.current = new Date().toISOString();
         timerEndRef.current = Date.now() + focus.min * 60_000;
         setRunning(true);
+      } else {
+        try { localStorage.removeItem(TIMER_STATE_KEY); } catch { /* storage unavailable */ }
       }
     }
     setGoal("");

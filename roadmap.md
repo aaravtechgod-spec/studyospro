@@ -1,7 +1,7 @@
 # Roadmap
 
 ## In progress
-0. **Timer + stopwatch analytics accuracy** — record exact elapsed seconds and make saved sessions appear in Analytics.
+0. **Timer + stopwatch analytics accuracy** — record exact elapsed seconds and make saved sessions appear in Analytics. Completed.
 1. **Terms & Conditions page** — `/terms`, linked from Auth + Settings, sign-up agreement checkbox.
 2. **Career Tracks hub** — `/careers` with AI/ML, Software Engineering, Cybersecurity, Cloud, UI/UX roadmaps.
 3. **Upload Notes / PDF → AI Flashcards** — customizer modal (count, difficulty, topic, source) + `flashcards-generate` edge function.
