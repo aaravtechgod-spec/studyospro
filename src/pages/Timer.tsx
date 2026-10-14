@@ -10,7 +10,7 @@ import { format, startOfDay, endOfDay } from "date-fns";
 
 type Preset = { label: string; min: number; type: "focus" | "break"; id?: string };
 type SavedTimerState = { userId: string; label: string; min: number; type: Preset["type"]; secondsLeft: number; running: boolean; endsAt: number | null; startedAt: string | null };
-type SavedStopwatchState = { userId: string; elapsedMs: number; runningSince: number | null };
+type SavedStopwatchState = { userId: string; elapsedMs: number; runningSince: number | null; startedAt?: string | null };
 const TIMER_STATE_KEY = "studyos:timer-state-v1";
 const STOPWATCH_STATE_KEY = "studyos:stopwatch-state-v1";
 
@@ -75,6 +75,7 @@ export default function Timer() {
   const [swRunning, setSwRunning] = useState(!!savedStopwatch?.runningSince);
   const [laps, setLaps] = useState<number[]>([]);
   const swStartRef = useRef<number | null>(savedStopwatch?.runningSince ?? null);
+  const swStartedAtRef = useRef<string | null>(savedStopwatch?.startedAt ?? null);
   const swBaseRef = useRef(savedStopwatch?.elapsedMs ?? 0);
   const swIntervalRef = useRef<number | null>(null);
 
@@ -115,6 +116,7 @@ export default function Timer() {
       userId: user.id,
       elapsedMs: swBaseRef.current,
       runningSince: swRunning ? swStartRef.current : null,
+      startedAt: swStartedAtRef.current,
     };
     try { localStorage.setItem(STOPWATCH_STATE_KEY, JSON.stringify(state)); } catch { /* storage unavailable */ }
   }, [user?.id, swRunning]);
@@ -124,6 +126,7 @@ export default function Timer() {
     setSwMs(0);
     swBaseRef.current = 0;
     swStartRef.current = null;
+    swStartedAtRef.current = null;
     setLaps([]);
     try { localStorage.removeItem(STOPWATCH_STATE_KEY); } catch { /* storage unavailable */ }
   };
@@ -135,6 +138,7 @@ export default function Timer() {
       swStartRef.current = null;
       setSwRunning(false);
     } else {
+      swStartedAtRef.current ??= new Date().toISOString();
       swStartRef.current = Date.now();
       setSwRunning(true);
     }
@@ -166,7 +170,7 @@ export default function Timer() {
       duration_seconds: seconds,
       session_type: "focus",
       subject_id: subjectId || null,
-      started_at: new Date(Date.now() - elapsedMs).toISOString(),
+      started_at: swStartedAtRef.current ?? new Date(Date.now() - elapsedMs).toISOString(),
     }).select("id").single();
     if (error) { toast.error(error.message); return; }
     if (!inserted) { toast.error("Could not save this session"); return; }
