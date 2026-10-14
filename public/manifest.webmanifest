@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "StudyOS — Student Command Center",
+  "short_name": "StudyOS",
+  "description": "Your study workspace for focus sessions, notes, flashcards, tasks, and learning progress.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "icons": [
+    {
+      "src": "/studyos-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/studyos-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
