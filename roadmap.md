@@ -1,5 +1,9 @@
 # Roadmap
 
+## Completed
+6. **PWA installability** — manifest-only home-screen setup, StudyOS icons, and browser metadata verified; publish required for the live site.
+7. **Audience growth research** — reviewed 30-day analytics, live entry flow, SEO scan, and relevant student-study resources; recommendations saved for owner review.
+
 ## In progress
 0. **Timer + stopwatch analytics accuracy** — record exact elapsed seconds and make saved sessions appear in Analytics. Completed.
 1. **Terms & Conditions page** — `/terms`, linked from Auth + Settings, sign-up agreement checkbox.
