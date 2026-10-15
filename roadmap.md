@@ -1,5 +1,9 @@
 # Roadmap
 
+## Completed
+6. **PWA installability** — manifest-only home-screen setup, StudyOS icons, and browser metadata verified; publish required for the live site.
+7. **Audience growth research** — reviewed 30-day analytics, live entry flow, SEO scan, and relevant student-study resources; recommendations saved for owner review.
+
 ## In progress
 0. **Timer + stopwatch analytics accuracy** — record exact elapsed seconds and make saved sessions appear in Analytics. Completed.
 1. **Terms & Conditions page** — `/terms`, linked from Auth + Settings, sign-up agreement checkbox.
@@ -8,6 +12,7 @@
 4. **XP System overhaul** — streak multipliers, daily quests, level titles, XP breakdown card.
 
 ## Queued
+6. **Audience growth research** — review StudyOS pages, traffic, search visibility, and audience needs; recommend the strongest first growth action based on evidence.
 5. **AI/ML Career Command Center** (`/career-command`) — personal long-term career OS for Aarav (Class 9 → B.Tech CSE → AI/ML Engineer).
    Sections: Hero, Mission, Long-term Roadmap timeline (2026→2034+), Skill Matrix, Project Lab,
    Learning Tracker, AI/ML Learning Tree, Achievements (honest empty state), Research/Experiments,
