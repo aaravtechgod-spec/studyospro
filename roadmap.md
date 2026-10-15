@@ -8,6 +8,7 @@
 4. **XP System overhaul** — streak multipliers, daily quests, level titles, XP breakdown card.
 
 ## Queued
+6. **Audience growth research** — review StudyOS pages, traffic, search visibility, and audience needs; recommend the strongest first growth action based on evidence.
 5. **AI/ML Career Command Center** (`/career-command`) — personal long-term career OS for Aarav (Class 9 → B.Tech CSE → AI/ML Engineer).
    Sections: Hero, Mission, Long-term Roadmap timeline (2026→2034+), Skill Matrix, Project Lab,
    Learning Tracker, AI/ML Learning Tree, Achievements (honest empty state), Research/Experiments,
