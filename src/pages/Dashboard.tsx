@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { PageHeader, StatCard, SkeletonRow } from "@/components/ui-kit";
+import { SkeletonRow } from "@/components/ui-kit";
 import { format, isToday, isThisWeek, parseISO, differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
-import { Calendar, ListChecks, Timer, Flame, ArrowRight } from "lucide-react";
+import { Calendar, ListChecks, Timer, Flame, ArrowRight, Layers, Sparkles, Clock3, CalendarDays } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -50,49 +51,47 @@ export default function Dashboard() {
 
   const todayTasks = tasks.filter(t => t.due_date && isToday(parseISO(t.due_date))).length;
   const weekTasks = tasks.filter(t => t.due_date && isThisWeek(parseISO(t.due_date))).length;
+  const firstName = (profile?.display_name ?? "Student").trim().split(/\s+/)[0] || "Student";
 
   return (
-    <div className="animate-fade-in">
-      <PageHeader
-        title={`Hey, ${profile?.display_name ?? "Student"}`}
-        subtitle={format(new Date(), "EEEE, MMMM d, yyyy")}
-      />
+    <div className="animate-fade-in space-y-6 md:space-y-8">
+      <section className="flex flex-col gap-5 border-b border-border/70 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
+          <h1 className="mt-2 font-display text-3xl sm:text-4xl font-extrabold">Welcome back, {firstName}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">A little progress today goes a long way.</p>
+        </div>
+        <Button asChild className="w-full sm:w-auto">
+          <Link to="/timer"><Timer className="h-4 w-4" /> Start a focus session</Link>
+        </Button>
+      </section>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Streak" value={<span>{profile?.streak_days ?? 0}<span className="text-base text-muted-foreground"> days</span></span>} accent="warning" hint="🔥 keep it alive" />
-        <StatCard label="Focus today" value={<span>{focusToday}<span className="text-base text-muted-foreground">m</span></span>} accent="primary" />
-        <StatCard label="Due this week" value={weekTasks} accent="info" hint={`${todayTasks} due today`} />
-        <StatCard label="Cards to review" value={dueCards} accent="xp" />
-      </div>
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4" aria-label="Study progress">
+        <ProgressStat icon={Flame} label="Current streak" value={profile?.streak_days ?? 0} suffix="days" accent="text-warning" />
+        <ProgressStat icon={Clock3} label="Focus today" value={focusToday} suffix="min" accent="text-primary" />
+        <ProgressStat icon={CalendarDays} label="Due this week" value={weekTasks} note={`${todayTasks} due today`} accent="text-info" />
+        <ProgressStat icon={Layers} label="Ready to review" value={dueCards} note="flashcards" accent="text-xp" />
+      </section>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-4">
-        <div className="surface p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display font-bold text-lg flex items-center gap-2"><ListChecks className="w-4 h-4 text-primary" /> Up next</h3>
-            <Link to="/tasks" className="text-xs text-primary hover:underline flex items-center gap-1">All <ArrowRight className="w-3 h-3" /></Link>
-          </div>
+      <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="surface p-4 sm:p-5">
+          <SectionTitle icon={ListChecks} title="Up next" to="/tasks" linkLabel="All homework" />
           {tasksLoading ? (
             <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)}</div>
           ) : tasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending tasks. ✨</p>
+            <div className="py-8 text-center text-sm text-muted-foreground">Nothing pending. Enjoy the breathing room.</div>
           ) : (
-            <ul className="space-y-2">
-              {tasks.map(t => {
-                const days = t.due_date ? differenceInDays(parseISO(t.due_date), new Date()) : null;
+            <ul className="divide-y divide-border/60">
+              {tasks.map((task) => {
+                const days = task.due_date ? differenceInDays(parseISO(task.due_date), new Date()) : null;
                 return (
-                  <li key={t.id} className="flex items-center gap-3 p-3 bg-surface-2 rounded-md border border-border">
-                    <div className={`w-1.5 h-8 rounded ${t.priority === "high" ? "bg-destructive" : t.priority === "low" ? "bg-info" : "bg-warning"}`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold truncate">{t.title}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {t.due_date ? `Due ${format(parseISO(t.due_date), "MMM d")}` : "No due date"}
-                      </div>
+                  <li key={task.id} className="flex items-center gap-3 py-3 first:pt-1 last:pb-1">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${task.priority === "high" ? "bg-destructive" : task.priority === "low" ? "bg-info" : "bg-warning"}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{task.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{task.due_date ? `Due ${format(parseISO(task.due_date), "MMM d")}` : "No due date"}</p>
                     </div>
-                    {days !== null && (
-                      <span className={`text-[10px] font-mono px-2 py-1 rounded ${days < 0 ? "bg-destructive/20 text-destructive" : days <= 1 ? "bg-warning/20 text-warning" : "bg-surface-3 text-muted-foreground"}`}>
-                        {days < 0 ? `${Math.abs(days)}d late` : days === 0 ? "Today" : `${days}d`}
-                      </span>
-                    )}
+                    {days !== null && <span className={`shrink-0 rounded-md px-2 py-1 text-[11px] ${days < 0 ? "bg-destructive/10 text-destructive" : days <= 1 ? "bg-warning/10 text-warning" : "bg-surface-3 text-muted-foreground"}`}>{days < 0 ? `${Math.abs(days)}d late` : days === 0 ? "Today" : `${days}d`}</span>}
                   </li>
                 );
               })}
@@ -100,51 +99,73 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="surface p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display font-bold text-lg flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Upcoming</h3>
-            <Link to="/schedule" className="text-xs text-primary hover:underline flex items-center gap-1">Schedule <ArrowRight className="w-3 h-3" /></Link>
-          </div>
+        <div className="surface p-4 sm:p-5">
+          <SectionTitle icon={Calendar} title="Coming up" to="/schedule" linkLabel="Schedule" />
           {eventsLoading ? (
             <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)}</div>
           ) : events.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No upcoming events.</p>
+            <div className="py-8 text-center text-sm text-muted-foreground">No upcoming events on your schedule.</div>
           ) : (
-            <ul className="space-y-2">
-              {events.map(e => (
-                <li key={e.id} className="flex items-center gap-3 p-3 bg-surface-2 rounded-md border border-border">
-                  <div className="text-center min-w-[44px]">
-                    <div className="text-[10px] text-muted-foreground uppercase">{format(parseISO(e.start_time), "MMM")}</div>
-                    <div className="font-display font-extrabold text-lg leading-none">{format(parseISO(e.start_time), "d")}</div>
+            <ul className="divide-y divide-border/60">
+              {events.map((event) => (
+                <li key={event.id} className="flex items-center gap-3 py-3 first:pt-1 last:pb-1">
+                  <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-md bg-surface-2/80">
+                    <span className="text-[10px] uppercase text-muted-foreground">{format(parseISO(event.start_time), "MMM")}</span>
+                    <span className="font-display text-lg font-bold leading-tight">{format(parseISO(event.start_time), "d")}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold truncate">{e.title}</div>
-                    <div className="text-[11px] text-muted-foreground">{format(parseISO(e.start_time), "EEE • h:mm a")}</div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{event.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{format(parseISO(event.start_time), "EEE • h:mm a")}</p>
                   </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="grid md:grid-cols-3 gap-4">
-        <Link to="/timer" className="surface p-5 hover:border-primary transition-colors group">
-          <Timer className="w-6 h-6 text-primary mb-2" />
-          <div className="font-display font-bold">Start Focus</div>
-          <div className="text-xs text-muted-foreground">25-min Pomodoro session</div>
-        </Link>
-        <Link to="/flashcards" className="surface p-5 hover:border-primary transition-colors group">
-          <Flame className="w-6 h-6 text-xp mb-2" />
-          <div className="font-display font-bold">Review {dueCards} cards</div>
-          <div className="text-xs text-muted-foreground">Spaced repetition</div>
-        </Link>
-        <Link to="/coach" className="surface p-5 hover:border-primary transition-colors group">
-          <span className="text-2xl mb-2 block">🤖</span>
-          <div className="font-display font-bold">Ask AI Coach</div>
-          <div className="text-xs text-muted-foreground">Stuck? Get an answer</div>
-        </Link>
-      </div>
+      <section>
+        <div className="mb-3 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-base font-bold">Pick up where you left off</h2>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <QuickAction to="/timer" icon={Timer} title="Focus session" detail="Start a 25-minute Pomodoro" />
+          <QuickAction to="/flashcards" icon={Flame} title={`Review ${dueCards} cards`} detail="Keep your memory fresh" />
+          <QuickAction to="/coach" icon={Sparkles} title="Ask your AI Coach" detail="Work through a tricky topic" />
+        </div>
+      </section>
     </div>
+  );
+}
+
+function ProgressStat({ icon: Icon, label, value, suffix, note, accent }: { icon: typeof Flame; label: string; value: number; suffix?: string; note?: string; accent: string }) {
+  return (
+    <div className="surface min-h-[112px] p-3.5 sm:p-4">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground"><Icon className={`h-4 w-4 ${accent}`} /><span>{label}</span></div>
+      <div className="mt-3 flex items-baseline gap-1.5">
+        <span className="font-display text-2xl font-extrabold">{value}</span>
+        {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
+      </div>
+      {note && <p className="mt-0.5 text-[11px] text-muted-foreground">{note}</p>}
+    </div>
+  );
+}
+
+function SectionTitle({ icon: Icon, title, to, linkLabel }: { icon: typeof Calendar; title: string; to: string; linkLabel: string }) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <h2 className="flex items-center gap-2 font-display text-base font-bold"><Icon className="h-4 w-4 text-primary" />{title}</h2>
+      <Link to={to} className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary">{linkLabel}<ArrowRight className="h-3 w-3" /></Link>
+    </div>
+  );
+}
+
+function QuickAction({ to, icon: Icon, title, detail }: { to: string; icon: typeof Timer; title: string; detail: string }) {
+  return (
+    <Link to={to} className="surface group flex min-h-[108px] items-center gap-3 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15"><Icon className="h-5 w-5" /></span>
+      <span className="min-w-0"><span className="block truncate text-sm font-semibold">{title}</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{detail}</span></span>
+    </Link>
   );
 }
