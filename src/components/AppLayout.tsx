@@ -7,6 +7,7 @@ import {
   GraduationCap, Layers, Bot, Trophy, BarChart3, Settings, LogOut, Menu, Sparkles, Command as CommandIcon,
   Brain, Compass,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { CoachChatProvider, useCoachChat } from "@/hooks/useCoachChat";
 import CoachPanel from "@/components/CoachPanel";
 import CommandPalette from "@/components/CommandPalette";
@@ -18,21 +19,21 @@ import { useTimeTracker } from "@/hooks/useTimeTracker";
 const COACH_ROUTES = ["/notes", "/tasks", "/exams", "/timer"];
 
 const navItems = [
-  { to: "/", icon: LayoutGrid, label: "Dashboard", end: true },
-  { to: "/exams", icon: Calendar, label: "Exams" },
-  { to: "/tasks", icon: ListChecks, label: "Homework" },
-  { to: "/notes", icon: FileText, label: "Notes" },
-  { to: "/timer", icon: Timer, label: "Study Timer" },
-  { to: "/schedule", icon: CalendarDays, label: "Schedule" },
-  { to: "/subjects", icon: GraduationCap, label: "Subjects" },
-  { to: "/flashcards", icon: Layers, label: "Flashcards" },
-  { to: "/coach", icon: Bot, label: "AI Coach" },
-  { to: "/aiml-roadmap", icon: Brain, label: "AI/ML Roadmap", badge: "NEW" },
-  { to: "/aiml-capstones", icon: Trophy, label: "Capstones" },
-  { to: "/careers", icon: Compass, label: "Career Tracks", badge: "NEW" },
-  { to: "/gamification", icon: Trophy, label: "XP & Badges" },
-  { to: "/analytics", icon: BarChart3, label: "Analytics" },
-  { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/", icon: LayoutGrid, label: "Dashboard", end: true, section: "Home" },
+  { to: "/exams", icon: Calendar, label: "Exams", section: "Study" },
+  { to: "/tasks", icon: ListChecks, label: "Homework", section: "Study" },
+  { to: "/notes", icon: FileText, label: "Notes", section: "Study" },
+  { to: "/timer", icon: Timer, label: "Study Timer", section: "Study" },
+  { to: "/schedule", icon: CalendarDays, label: "Schedule", section: "Study" },
+  { to: "/subjects", icon: GraduationCap, label: "Subjects", section: "Study" },
+  { to: "/flashcards", icon: Layers, label: "Flashcards", section: "Study" },
+  { to: "/coach", icon: Bot, label: "AI Coach", section: "Learn" },
+  { to: "/aiml-roadmap", icon: Brain, label: "AI/ML Roadmap", badge: "NEW", section: "Learn" },
+  { to: "/aiml-capstones", icon: Trophy, label: "Capstones", section: "Learn" },
+  { to: "/careers", icon: Compass, label: "Career Tracks", badge: "NEW", section: "Learn" },
+  { to: "/gamification", icon: Trophy, label: "XP & Badges", section: "Progress" },
+  { to: "/analytics", icon: BarChart3, label: "Analytics", section: "Progress" },
+  { to: "/settings", icon: Settings, label: "Settings", section: "Progress" },
 ];
 
 export default function AppLayout() {
@@ -54,18 +55,18 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex flex-col h-full py-5">
-      <div className="px-5 pb-3 border-b border-border mb-2">
-        <h1 className="font-display text-xl font-extrabold tracking-tight">
+      <div className="px-5 pb-5 border-b border-border/70 mb-3">
+        <h1 className="font-display text-xl font-extrabold">
           Study<span className="text-primary">OS</span>
-          <span className="ml-2 inline-block bg-primary text-primary-foreground text-[8px] font-extrabold px-1.5 py-0.5 rounded tracking-widest align-middle">PRO</span>
+          <span className="ml-2 inline-block bg-primary/10 text-primary text-[9px] font-bold px-1.5 py-0.5 rounded align-middle">PRO</span>
         </h1>
-        <p className="text-[10px] text-muted-foreground mt-0.5 tracking-widest">COMMAND CENTER</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Your space to learn</p>
       </div>
 
-      <div className="mx-3 mt-1 mb-2 px-2.5 py-2 bg-surface-2 rounded-md border border-border">
-        <div className="flex items-center justify-between text-[10px] tracking-widest text-muted-foreground uppercase">
-          <span>LVL {level}</span>
-          <span className="text-xp">{xp} XP</span>
+      <div className="mx-3 mb-3 px-3 py-3 bg-surface-2/70 rounded-lg border border-border/70">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>Level {level}</span>
+          <span className="text-xp font-medium">{xp} XP</span>
         </div>
         <div className="h-1.5 bg-surface-3 rounded-full mt-1.5 overflow-hidden">
           <div className="h-full bg-xp transition-all" style={{ width: `${pct}%` }} />
@@ -76,33 +77,39 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <nav className="flex-1 px-2 mt-2 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive
-                  ? "bg-primary text-primary-foreground font-semibold"
-                  : "text-foreground/80 hover:bg-surface-2 hover:text-foreground"
-              }`
-            }
-          >
-            <item.icon className="w-4 h-4" />
-            <span className="flex-1">{item.label}</span>
-            {item.badge && (
-              <span className="text-[8px] font-extrabold bg-primary text-primary-foreground px-1.5 py-0.5 rounded tracking-widest">
-                {item.badge}
-              </span>
-            )}
-          </NavLink>
-        ))}
+      <nav className="flex-1 px-3 overflow-y-auto" aria-label="Main navigation">
+        {["Home", "Study", "Learn", "Progress"].map((section) => {
+          const sectionItems = navItems.filter((item) => item.section === section);
+          return (
+            <div key={section} className="mb-4">
+              {section !== "Home" && <p className="px-2 mb-1.5 text-[10px] font-semibold text-muted-foreground/75">{section}</p>}
+              <div className="space-y-0.5">
+                {sectionItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      `group flex items-center gap-3 px-2.5 py-2 rounded-md text-[13px] transition-colors ${
+                        isActive
+                          ? "bg-primary/10 text-primary font-semibold ring-1 ring-inset ring-primary/15"
+                          : "text-foreground/75 hover:bg-surface-2/80 hover:text-foreground"
+                      }`
+                    }
+                  >
+                    <item.icon className="w-4 h-4 opacity-80 group-[.active]:opacity-100" />
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge && <span className="text-[9px] font-semibold text-primary">{item.badge}</span>}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
-      <div className="px-3 pt-3 border-t border-border mt-2">
+      <div className="px-3 pt-3 border-t border-border/70 mt-2">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-sm">
             {(profile?.display_name ?? user?.email ?? "?").charAt(0).toUpperCase()}
@@ -112,12 +119,13 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
             <div className="text-[10px] text-muted-foreground truncate">{user?.email}</div>
           </div>
         </div>
-        <button
+        <Button
           onClick={signOut}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground transition-colors"
+          variant="ghost"
+          className="w-full justify-start gap-2 px-3 py-2 h-9 text-xs text-muted-foreground"
         >
           <LogOut className="w-3.5 h-3.5" /> Sign out
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -156,17 +164,17 @@ function AppLayoutInner() {
   return (
     <div className="flex min-h-screen w-full bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-[230px] bg-surface border-r border-border overflow-y-auto">
+      <aside className="hidden lg:flex flex-col w-[248px] shrink-0 bg-surface/75 border-r border-border/70 backdrop-blur-2xl overflow-y-auto">
         <SidebarBody />
       </aside>
 
       {/* Mobile top bar */}
-      <header className="lg:hidden fixed top-0 inset-x-0 z-30 h-14 bg-surface/95 backdrop-blur border-b border-border flex items-center px-3 gap-2">
+      <header className="lg:hidden fixed top-0 inset-x-0 z-30 h-14 bg-background/85 backdrop-blur-xl border-b border-border/70 flex items-center px-3 gap-2">
         <Sheet>
           <SheetTrigger asChild>
-            <button className="p-2 rounded-md hover:bg-surface-2" aria-label="Open menu">
+            <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Open menu">
               <Menu className="w-5 h-5" />
-            </button>
+            </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-[260px] bg-surface border-border">
             <MobileSidebarBody />
@@ -175,30 +183,32 @@ function AppLayoutInner() {
         <div className="font-display font-extrabold text-base">
           Study<span className="text-primary">OS</span>
         </div>
-        <button
+        <Button
           onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-          className="ml-auto p-2 rounded-md hover:bg-surface-2"
+          variant="ghost"
+          size="icon"
+          className="ml-auto h-9 w-9"
           aria-label="Open command palette"
         >
           <CommandIcon className="w-4 h-4" />
-        </button>
+        </Button>
       </header>
 
       {/* Main */}
-      <main className="flex-1 min-w-0 p-5 md:p-8 max-w-[1400px] mx-auto w-full pt-[72px] lg:pt-8">
+      <main className="flex-1 min-w-0 p-4 sm:p-5 md:p-8 max-w-[1500px] mx-auto w-full pt-[72px] lg:pt-8">
         <Outlet />
       </main>
 
       {/* Floating Coach launcher */}
       {showCoachLauncher && !sidebarOpen && (
-        <button
+        <Button
           onClick={openSidebar}
-          className="fixed bottom-5 right-5 z-40 bg-primary text-primary-foreground rounded-full shadow-xl shadow-primary/30 px-4 py-3 flex items-center gap-2 font-semibold text-sm hover:bg-primary-glow transition-colors"
+          className="fixed bottom-5 right-5 z-40 h-11 rounded-full shadow-lg shadow-primary/15 px-4 flex items-center gap-2 font-semibold text-sm"
           aria-label="Open AI Coach"
         >
           <Sparkles className="w-4 h-4" />
           Ask Coach
-        </button>
+        </Button>
       )}
 
       <CoachPanel />
