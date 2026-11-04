@@ -67,7 +67,7 @@ export default function Dashboard() {
       </section>
 
       <section className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4" aria-label="Study progress">
-        <ProgressStat icon={Flame} label="Current streak" value={profile?.streak_days ?? 0} suffix="days" accent="text-warning" />
+        <ProgressStat icon={Flame} label="Current streak" value={profile?.streak_days ?? 0} suffix={(profile?.streak_days ?? 0) === 1 ? "day" : "days"} accent="text-warning" />
         <ProgressStat icon={Clock3} label="Focus today" value={focusToday} suffix="min" accent="text-primary" />
         <ProgressStat icon={CalendarDays} label="Due this week" value={weekTasks} note={`${todayTasks} due today`} accent="text-info" />
         <ProgressStat icon={Layers} label="Ready to review" value={dueCards} note="flashcards" accent="text-xp" />
