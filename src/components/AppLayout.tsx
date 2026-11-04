@@ -98,7 +98,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
                       }`
                     }
                   >
-                    <item.icon className="w-4 h-4 opacity-80 group-[.active]:opacity-100" />
+                    <item.icon className="w-4 h-4 opacity-80" />
                     <span className="flex-1">{item.label}</span>
                     {item.badge && <span className="text-[9px] font-semibold text-primary">{item.badge}</span>}
                   </NavLink>
