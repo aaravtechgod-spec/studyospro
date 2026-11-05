@@ -3,18 +3,21 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUiMode } from "@/hooks/useUiMode";
 
 export type Theme = "dark" | "light";
 
 export function useTheme() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const { mode } = useUiMode();
   const qc = useQueryClient();
-  const theme: Theme = (profile?.theme as Theme) ?? "dark";
+  const theme: Theme = (profile?.theme as Theme) ?? (mode === "liquid-glass" ? "light" : "dark");
 
   useEffect(() => {
     document.documentElement.classList.toggle("light", theme === "light");
-  }, [theme]);
+    document.documentElement.classList.toggle("glass-dark", mode === "liquid-glass" && theme === "dark");
+  }, [theme, mode]);
 
   const setTheme = useCallback(
     async (next: Theme) => {
