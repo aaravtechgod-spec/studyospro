@@ -18,7 +18,7 @@ export function useUiMode() {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("liquid-glass", mode === "liquid-glass");
-    root.classList.toggle("glass-dark", mode === "liquid-glass" && !root.classList.contains("light"));
+    if (mode !== "liquid-glass") root.classList.remove("glass-dark");
     try {
       window.localStorage.setItem(UI_MODE_KEY, mode);
     } catch {
