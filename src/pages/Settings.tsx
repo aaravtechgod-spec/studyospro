@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import ImportStudyOS from "@/components/ImportStudyOS";
 import { useAIPrefs, useUpdateAIPrefs, BOARDS, CLASSES, DIFFICULTIES, TONES, CURRICULA } from "@/hooks/useAIPrefs";
 import { useTheme, type Theme } from "@/hooks/useTheme";
+import { useUiMode, type UiMode } from "@/hooks/useUiMode";
 import { Globe, Image as ImageIcon, X } from "lucide-react";
 
 const THEMES = [
@@ -22,6 +23,7 @@ export default function Settings() {
   const prefs = useAIPrefs();
   const updatePrefs = useUpdateAIPrefs();
   const { theme: currentTheme, setTheme } = useTheme();
+  const { mode: currentUiMode, setUiMode } = useUiMode();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [subjectInput, setSubjectInput] = useState("");
@@ -168,6 +170,23 @@ export default function Settings() {
               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-background transition-all ${prefs.ai_image_gen ? "left-[18px]" : "left-0.5"}`} />
             </div>
           </button>
+        </div>
+      </div>
+
+      <div className="surface p-5 mb-5">
+        <h3 className="font-display font-bold text-lg mb-1">App appearance</h3>
+        <p className="text-xs text-muted-foreground mb-4">Switch between the new glass design and the interface you already know.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {([
+            { id: "liquid-glass", label: "Liquid Glass", desc: "Bright frosted surfaces with lime accents" },
+            { id: "current", label: "Current UI", desc: "Return to the previous StudyOS design" },
+          ] as const).map((view) => (
+            <button key={view.id} type="button" onClick={() => setUiMode(view.id as UiMode)} aria-pressed={currentUiMode === view.id}
+              className={`p-4 rounded-md border text-left transition-colors ${currentUiMode === view.id ? "border-primary bg-primary/10" : "border-border bg-surface-2 hover:border-primary/50"}`}>
+              <div className="font-display font-bold">{view.label}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{view.desc}</div>
+            </button>
+          ))}
         </div>
       </div>
 

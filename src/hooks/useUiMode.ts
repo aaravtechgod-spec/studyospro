@@ -4,9 +4,9 @@ export type UiMode = "current" | "liquid-glass";
 
 const UI_MODE_KEY = "studyos:ui-mode-v1";
 
-function readUiMode(): UiMode {
+export function readUiMode(storage: Pick<Storage, "getItem"> = window.localStorage): UiMode {
   try {
-    return window.localStorage.getItem(UI_MODE_KEY) === "current" ? "current" : "liquid-glass";
+    return storage.getItem(UI_MODE_KEY) === "current" ? "current" : "liquid-glass";
   } catch {
     return "liquid-glass";
   }
