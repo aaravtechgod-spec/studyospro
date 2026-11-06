@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { SkeletonRow } from "@/components/ui-kit";
-import { format, isToday, isThisWeek, parseISO, differenceInDays, startOfDay, subDays } from "date-fns";
+import { format, isSameDay, isToday, isThisWeek, parseISO, differenceInDays, startOfDay, subDays } from "date-fns";
 import { Link } from "react-router-dom";
 import {
   Calendar, ListChecks, Timer, Flame, ArrowRight, Layers, Sparkles,
@@ -36,7 +36,7 @@ export default function Dashboard() {
   });
 
   const { data: focusToday = 0 } = useQuery({
-    queryKey: ["focus-today", user?.id],
+    queryKey: ["focus_today", user?.id],
     enabled: !!user,
     queryFn: async () => {
       if (!user) return 0;
@@ -72,7 +72,7 @@ export default function Dashboard() {
   const firstName = (profile?.display_name ?? "Student").trim().split(/\s+/)[0] || "Student";
   const weekChart = Array.from({ length: 7 }, (_, index) => {
     const day = startOfDay(subDays(new Date(), 6 - index));
-    const seconds = weekFocus.filter((session) => isToday(parseISO(session.started_at)) && isToday(day) || parseISO(session.started_at).toDateString() === day.toDateString())
+    const seconds = weekFocus.filter((session) => isSameDay(parseISO(session.started_at), day))
       .reduce((total, session) => total + (session.duration_seconds ?? session.duration_minutes * 60), 0);
     return { day, minutes: Math.round(seconds / 60) };
   });
@@ -91,11 +91,12 @@ export default function Dashboard() {
         </Button>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Study progress">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5" aria-label="Study progress">
         <ProgressStat icon={Flame} label="Current streak" value={profile?.streak_days ?? 0} suffix={(profile?.streak_days ?? 0) === 1 ? "day" : "days"} accent="text-warning" />
         <ProgressStat icon={Clock3} label="Focus today" value={focusToday} suffix="min" accent="text-primary" />
-        <ProgressStat icon={Calendar} label="Upcoming events" value={events.length} note="On your schedule" accent="text-info" />
+        <ProgressStat icon={CalendarDays} label="Due this week" value={weekTasks} note={`${todayTasks} due today`} accent="text-info" />
         <ProgressStat icon={Layers} label="Ready to review" value={dueCards} note="flashcards" accent="text-xp" />
+        <ProgressStat icon={Calendar} label="Coming up" value={events.length} note="Scheduled events" accent="text-success" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
