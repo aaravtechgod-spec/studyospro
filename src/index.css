@@ -244,6 +244,9 @@
     backdrop-filter: blur(28px) saturate(150%);
     -webkit-backdrop-filter: blur(28px) saturate(150%);
   }
+  html.liquid-glass .glass-main {
+    padding-bottom: max(6.5rem, calc(env(safe-area-inset-bottom) + 5rem));
+  }
   html.liquid-glass .glass-nav-link {
     border-radius: 999px;
     transition: background-color 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
@@ -277,6 +280,9 @@
     min-height: 128px;
     border-radius: 22px;
     transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  @media (min-width: 1024px) {
+    html.liquid-glass .glass-main { padding-bottom: 2rem; }
   }
   html.liquid-glass .dashboard-stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-glass), 0 10px 24px hsl(var(--primary) / 0.1); }
   html.liquid-glass input:not([type="checkbox"]),

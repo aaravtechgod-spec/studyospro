@@ -202,7 +202,7 @@ function AppLayoutInner() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 min-w-0 p-4 sm:p-5 md:p-8 max-w-[1500px] mx-auto w-full pt-[72px] lg:pt-8">
+      <main className={`flex-1 min-w-0 p-4 sm:p-5 md:p-8 max-w-[1500px] mx-auto w-full pt-[72px] lg:pt-8 ${mode === "liquid-glass" ? "glass-main" : ""}`}>
         <Outlet />
       </main>
 
