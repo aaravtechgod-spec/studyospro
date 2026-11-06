@@ -13,6 +13,7 @@ import CoachPanel from "@/components/CoachPanel";
 import CommandPalette from "@/components/CommandPalette";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTheme } from "@/hooks/useTheme";
+import { useUiMode } from "@/hooks/useUiMode";
 import { useTimeTracker } from "@/hooks/useTimeTracker";
 
 // Routes where the floating "Ask Coach" button is shown.
@@ -47,6 +48,7 @@ export default function AppLayout() {
 function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
+  const { mode, setUiMode } = useUiMode();
   const xp = profile?.xp ?? 0;
   const level = profile?.level ?? 1;
   const xpThis = xp - xpForLevel(level - 1);
@@ -55,12 +57,16 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex flex-col h-full py-5">
-      <div className="px-5 pb-5 border-b border-border/70 mb-3">
+      <div className="px-5 pb-4 border-b border-border/70 mb-3">
         <h1 className="font-display text-xl font-extrabold">
           Study<span className="text-primary">OS</span>
           <span className="ml-2 inline-block bg-primary/10 text-primary text-[9px] font-bold px-1.5 py-0.5 rounded align-middle">PRO</span>
         </h1>
         <p className="text-[10px] text-muted-foreground mt-1">Your space to learn</p>
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full border border-border/70 bg-surface-2/70 p-1" aria-label="Appearance">
+          <Button type="button" size="sm" variant={mode === "current" ? "default" : "ghost"} className="h-8 rounded-full px-2 text-[10px]" aria-pressed={mode === "current"} onClick={() => setUiMode("current")}>Current UI</Button>
+          <Button type="button" size="sm" variant={mode === "liquid-glass" ? "default" : "ghost"} className="h-8 rounded-full px-2 text-[10px]" aria-pressed={mode === "liquid-glass"} onClick={() => setUiMode("liquid-glass")}>Liquid Glass</Button>
+        </div>
       </div>
 
       <div className="mx-3 mb-3 px-3 py-3 bg-surface-2/70 rounded-lg border border-border/70">
@@ -91,7 +97,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
                     end={item.end}
                     onClick={onNavigate}
                     className={({ isActive }) =>
-                      `group flex items-center gap-3 px-2.5 py-2 rounded-md text-[13px] transition-colors ${
+                      `glass-nav-link group flex items-center gap-3 px-2.5 py-2 rounded-md text-[13px] transition-colors ${
                         isActive
                           ? "bg-primary/10 text-primary font-semibold ring-1 ring-inset ring-primary/15"
                           : "text-foreground/75 hover:bg-surface-2/80 hover:text-foreground"
@@ -135,6 +141,7 @@ function AppLayoutInner() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode } = useUiMode();
   const { sidebarOpen, openSidebar, setContext } = useCoachChat();
   useTimeTracker(!!user && !loading);
   useTheme(); // ensures the html.light class reflects profile.theme
@@ -164,12 +171,12 @@ function AppLayoutInner() {
   return (
     <div className="flex min-h-screen w-full bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-[248px] shrink-0 bg-surface/75 border-r border-border/70 backdrop-blur-2xl overflow-y-auto">
+      <aside className={`glass-sidebar hidden lg:flex flex-col w-[248px] shrink-0 bg-surface/75 border-r border-border/70 backdrop-blur-2xl overflow-y-auto ${mode === "liquid-glass" ? "m-3 rounded-[28px] border" : ""}`}>
         <SidebarBody />
       </aside>
 
       {/* Mobile top bar */}
-      <header className="lg:hidden fixed top-0 inset-x-0 z-30 h-14 bg-background/85 backdrop-blur-xl border-b border-border/70 flex items-center px-3 gap-2">
+      <header className={`glass-control lg:hidden fixed top-0 inset-x-0 z-30 h-14 bg-background/85 backdrop-blur-xl border-b border-border/70 flex items-center px-3 gap-2 ${mode === "liquid-glass" ? "border-x-0 border-t-0" : ""}`}>
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Open menu">
@@ -195,15 +202,34 @@ function AppLayoutInner() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 min-w-0 p-4 sm:p-5 md:p-8 max-w-[1500px] mx-auto w-full pt-[72px] lg:pt-8">
+      <main className={`flex-1 min-w-0 p-4 sm:p-5 md:p-8 max-w-[1500px] mx-auto w-full pt-[72px] lg:pt-8 ${mode === "liquid-glass" ? "glass-main" : ""}`}>
         <Outlet />
       </main>
+
+      {mode === "liquid-glass" && (
+        <nav aria-label="Quick navigation" className="glass-dock fixed bottom-[max(12px,env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full p-2 lg:hidden">
+          {[navItems[0], navItems[2], navItems[4], navItems[7], navItems[8]].map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.end} aria-label={item.label} title={item.label}
+              className={({ isActive }) => `glass-dock-link flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors ${isActive ? "text-foreground" : "hover:bg-surface-2/80 hover:text-foreground"}`}>
+              <item.icon className="h-[18px] w-[18px]" />
+            </NavLink>
+          ))}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" className="h-11 w-11 rounded-full text-muted-foreground" aria-label="More destinations"><Menu className="h-[18px] w-[18px]" /></Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="glass-sidebar w-[280px] border-border bg-surface p-0">
+              <MobileSidebarBody />
+            </SheetContent>
+          </Sheet>
+        </nav>
+      )}
 
       {/* Floating Coach launcher */}
       {showCoachLauncher && !sidebarOpen && (
         <Button
           onClick={openSidebar}
-          className="fixed bottom-5 right-5 z-40 h-11 rounded-full shadow-lg shadow-primary/15 px-4 flex items-center gap-2 font-semibold text-sm"
+          className={`fixed ${mode === "liquid-glass" ? "bottom-20 right-4 sm:bottom-6 sm:right-6" : "bottom-5 right-5"} z-40 h-11 rounded-full shadow-lg shadow-primary/15 px-4 flex items-center gap-2 font-semibold text-sm`}
           aria-label="Open AI Coach"
         >
           <Sparkles className="w-4 h-4" />

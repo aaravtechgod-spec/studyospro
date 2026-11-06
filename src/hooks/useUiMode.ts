@@ -4,9 +4,9 @@ export type UiMode = "current" | "liquid-glass";
 
 const UI_MODE_KEY = "studyos:ui-mode-v1";
 
-function readUiMode(): UiMode {
+export function readUiMode(storage?: Pick<Storage, "getItem">): UiMode {
   try {
-    return window.localStorage.getItem(UI_MODE_KEY) === "current" ? "current" : "liquid-glass";
+    return (storage ?? window.localStorage).getItem(UI_MODE_KEY) === "current" ? "current" : "liquid-glass";
   } catch {
     return "liquid-glass";
   }
@@ -14,6 +14,15 @@ function readUiMode(): UiMode {
 
 export function useUiMode() {
   const [mode, setMode] = useState<UiMode>(readUiMode);
+
+  useEffect(() => {
+    const syncMode = (event: Event) => {
+      const nextMode = (event as CustomEvent<UiMode>).detail;
+      if (nextMode === "current" || nextMode === "liquid-glass") setMode(nextMode);
+    };
+    window.addEventListener("studyos:ui-mode-change", syncMode);
+    return () => window.removeEventListener("studyos:ui-mode-change", syncMode);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -26,7 +35,10 @@ export function useUiMode() {
     }
   }, [mode]);
 
-  const setUiMode = useCallback((next: UiMode) => setMode(next), []);
+  const setUiMode = useCallback((next: UiMode) => {
+    setMode(next);
+    window.dispatchEvent(new CustomEvent<UiMode>("studyos:ui-mode-change", { detail: next }));
+  }, []);
 
   return { mode, setUiMode };
 }
