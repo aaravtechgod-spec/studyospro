@@ -16,6 +16,15 @@ export function useUiMode() {
   const [mode, setMode] = useState<UiMode>(readUiMode);
 
   useEffect(() => {
+    const syncMode = (event: Event) => {
+      const nextMode = (event as CustomEvent<UiMode>).detail;
+      if (nextMode === "current" || nextMode === "liquid-glass") setMode(nextMode);
+    };
+    window.addEventListener("studyos:ui-mode-change", syncMode);
+    return () => window.removeEventListener("studyos:ui-mode-change", syncMode);
+  }, []);
+
+  useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("liquid-glass", mode === "liquid-glass");
     if (mode !== "liquid-glass") root.classList.remove("glass-dark");
@@ -26,7 +35,10 @@ export function useUiMode() {
     }
   }, [mode]);
 
-  const setUiMode = useCallback((next: UiMode) => setMode(next), []);
+  const setUiMode = useCallback((next: UiMode) => {
+    setMode(next);
+    window.dispatchEvent(new CustomEvent<UiMode>("studyos:ui-mode-change", { detail: next }));
+  }, []);
 
   return { mode, setUiMode };
 }
