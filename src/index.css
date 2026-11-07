@@ -181,6 +181,10 @@
     background-image: var(--glass-ambient);
     background-attachment: fixed;
   }
+  html.liquid-glass body,
+  html.liquid-glass #root {
+    background-color: transparent;
+  }
   h1, h2, h3, h4, .display {
     font-family: 'Syne', sans-serif;
     letter-spacing: 0;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,13 +6,24 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUiMode } from "@/hooks/useUiMode";
 
 export type Theme = "dark" | "light";
+const GLASS_THEME_KEY = "studyos:liquid-glass-theme-v1";
+
+function readGlassTheme(): Theme {
+  try {
+    return window.localStorage.getItem(GLASS_THEME_KEY) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
 
 export function useTheme() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { mode } = useUiMode();
   const qc = useQueryClient();
-  const theme: Theme = (profile?.theme as Theme) ?? (mode === "liquid-glass" ? "light" : "dark");
+  const [glassTheme, setGlassTheme] = useState<Theme>(readGlassTheme);
+  const profileTheme: Theme = (profile?.theme as Theme) ?? "dark";
+  const theme: Theme = mode === "liquid-glass" ? glassTheme : profileTheme;
 
   useEffect(() => {
     document.documentElement.classList.toggle("light", theme === "light");
@@ -23,11 +34,16 @@ export function useTheme() {
     async (next: Theme) => {
       // Optimistic
       document.documentElement.classList.toggle("light", next === "light");
+      if (mode === "liquid-glass") {
+        setGlassTheme(next);
+        try { window.localStorage.setItem(GLASS_THEME_KEY, next); } catch { /* storage unavailable */ }
+        return;
+      }
       if (!user) return;
       await supabase.from("profiles").update({ theme: next }).eq("user_id", user.id);
       qc.invalidateQueries({ queryKey: ["profile"] });
     },
-    [user, qc],
+    [user, qc, mode],
   );
 
   const toggle = useCallback(() => setTheme(theme === "light" ? "dark" : "light"), [theme, setTheme]);
