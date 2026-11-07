@@ -233,6 +233,10 @@
   html.liquid-glass .bg-primary\/15 {
     background-color: hsl(var(--primary) / 0.19);
   }
+  html.liquid-glass .bg-background\/90 {
+    background-color: hsl(var(--background) / 0.9);
+    backdrop-filter: blur(8px);
+  }
   .surface-2 {
     @apply bg-[hsl(var(--surface-2)/0.78)] border border-border/75 rounded-lg;
     backdrop-filter: blur(14px);
