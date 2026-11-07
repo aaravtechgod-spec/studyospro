@@ -171,7 +171,7 @@ function AppLayoutInner() {
   const showCoachLauncher = COACH_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r + "/"));
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className={`glass-app flex min-h-screen w-full bg-background ${mode === "liquid-glass" ? "glass-active" : ""}`}>
       {/* Desktop sidebar */}
       <aside className={`glass-sidebar hidden lg:flex flex-col w-[248px] shrink-0 bg-surface/75 border-r border-border/70 backdrop-blur-2xl overflow-y-auto ${mode === "liquid-glass" ? "m-3 rounded-[28px] border" : ""}`}>
         <SidebarBody />

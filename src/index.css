@@ -100,6 +100,7 @@
     --input: 216 28% 84%;
     --ring: 76 100% 48%;
     --primary: 76 100% 48%;
+    --primary-text: 82 100% 22%;
     --primary-foreground: 224 27% 10%;
     --primary-glow: 78 100% 58%;
     --secondary: 214 36% 94%;
@@ -140,6 +141,7 @@
     --border: 220 14% 25%;
     --input: 220 14% 25%;
     --primary: 71 100% 67%;
+    --primary-text: 71 100% 67%;
     --primary-foreground: 0 0% 4%;
     --primary-glow: 71 80% 50%;
     --secondary: 222 16% 16%;
@@ -185,6 +187,7 @@
   html.liquid-glass #root {
     background-color: transparent;
   }
+  html.liquid-glass .glass-active { background-color: transparent; }
   h1, h2, h3, h4, .display {
     font-family: 'Syne', sans-serif;
     letter-spacing: 0;
@@ -270,6 +273,7 @@
     backdrop-filter: blur(28px) saturate(150%);
     -webkit-backdrop-filter: blur(28px) saturate(150%);
   }
+  html.liquid-glass:not(.glass-dark) .text-primary { color: hsl(var(--primary-text)); }
   html.liquid-glass .glass-main {
     padding-bottom: max(6.5rem, calc(env(safe-area-inset-bottom) + 5rem));
   }
