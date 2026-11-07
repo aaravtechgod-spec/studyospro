@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, xpForLevel } from "@/hooks/useProfile";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutGrid, Calendar, ListChecks, FileText, Timer, CalendarDays,
   GraduationCap, Layers, Bot, Trophy, BarChart3, Settings, LogOut, Menu, Sparkles, Command as CommandIcon,
@@ -143,6 +143,8 @@ function AppLayoutInner() {
   const location = useLocation();
   const { mode } = useUiMode();
   const { sidebarOpen, openSidebar, setContext } = useCoachChat();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   useTimeTracker(!!user && !loading);
   useTheme(); // ensures the html.light class reflects profile.theme
 
@@ -169,7 +171,7 @@ function AppLayoutInner() {
   const showCoachLauncher = COACH_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r + "/"));
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className={`glass-app flex min-h-screen w-full bg-background ${mode === "liquid-glass" ? "glass-active" : ""}`}>
       {/* Desktop sidebar */}
       <aside className={`glass-sidebar hidden lg:flex flex-col w-[248px] shrink-0 bg-surface/75 border-r border-border/70 backdrop-blur-2xl overflow-y-auto ${mode === "liquid-glass" ? "m-3 rounded-[28px] border" : ""}`}>
         <SidebarBody />
@@ -177,14 +179,14 @@ function AppLayoutInner() {
 
       {/* Mobile top bar */}
       <header className={`glass-control lg:hidden fixed top-0 inset-x-0 z-30 h-14 bg-background/85 backdrop-blur-xl border-b border-border/70 flex items-center px-3 gap-2 ${mode === "liquid-glass" ? "border-x-0 border-t-0" : ""}`}>
-        <Sheet>
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Open menu">
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-[260px] bg-surface border-border">
-            <MobileSidebarBody />
+          <SheetContent side="left" className={`p-0 w-[260px] bg-surface border-border ${mode === "liquid-glass" ? "glass-sidebar" : ""}`}>
+            <MobileSidebarBody onNavigate={() => setMobileMenuOpen(false)} />
           </SheetContent>
         </Sheet>
         <div className="font-display font-extrabold text-base">
@@ -214,12 +216,12 @@ function AppLayoutInner() {
               <item.icon className="h-[18px] w-[18px]" />
             </NavLink>
           ))}
-          <Sheet>
+          <Sheet open={mobileMoreOpen} onOpenChange={setMobileMoreOpen}>
             <SheetTrigger asChild>
               <Button type="button" variant="ghost" size="icon" className="h-11 w-11 rounded-full text-muted-foreground" aria-label="More destinations"><Menu className="h-[18px] w-[18px]" /></Button>
             </SheetTrigger>
             <SheetContent side="left" className="glass-sidebar w-[280px] border-border bg-surface p-0">
-              <MobileSidebarBody />
+              <MobileSidebarBody onNavigate={() => setMobileMoreOpen(false)} />
             </SheetContent>
           </Sheet>
         </nav>
@@ -246,6 +248,6 @@ function AppLayoutInner() {
 // Wrapper that closes the Sheet when a link is clicked. The Sheet's close
 // behavior is handled by Radix when the children's NavLink triggers navigation,
 // but we also force re-render via location change.
-function MobileSidebarBody() {
-  return <SidebarBody />;
+function MobileSidebarBody({ onNavigate }: { onNavigate: () => void }) {
+  return <SidebarBody onNavigate={onNavigate} />;
 }

@@ -373,7 +373,7 @@ export default function Timer() {
   const pct = ((selected.min * 60 - secondsLeft) / (selected.min * 60)) * 100;
 
   return (
-    <div className="animate-fade-in">
+    <div className="glass-timer animate-fade-in">
       <PageHeader title="Study Timer" subtitle="Pomodoro · Stopwatch · Auto-cycle · Shortcuts: Space / R" />
 
       <div className="flex gap-2 mb-4">
@@ -389,7 +389,7 @@ export default function Timer() {
 
       <div className="grid lg:grid-cols-3 gap-5">
         {mode === "timer" ? (
-        <div className="surface p-10 lg:col-span-2 relative overflow-hidden">
+        <div className="timer-focus-panel surface p-5 sm:p-8 lg:p-10 lg:col-span-2 relative overflow-hidden">
           {/* Ambient glow */}
           <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/10 blur-[120px] rounded-full" />
 
@@ -403,7 +403,7 @@ export default function Timer() {
             </div>
 
             {/* Timer ring */}
-            <div className="relative w-80 h-80 flex items-center justify-center">
+            <div className="timer-ring relative w-80 h-80 flex items-center justify-center">
               <svg className="absolute inset-0 w-full h-full -rotate-90">
                 <circle cx="50%" cy="50%" r="150" stroke="hsl(var(--surface-3))" strokeWidth="4" fill="transparent" />
                 <circle
@@ -416,7 +416,7 @@ export default function Timer() {
                 />
               </svg>
               <div className="text-center">
-                <div className="font-mono font-bold text-7xl tabular-nums tracking-tighter text-primary">
+                <div className="timer-readout font-mono font-bold text-7xl tabular-nums tracking-tighter text-primary">
                   {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
                 </div>
                 <div className="label-mono mt-2 text-muted-foreground">

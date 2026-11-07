@@ -10,8 +10,15 @@ import {
   Clock3, CalendarDays, FileText, Plus, Bot, TrendingUp, BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CurrentDashboard from "@/pages/CurrentDashboard";
+import { useUiMode } from "@/hooks/useUiMode";
 
 export default function Dashboard() {
+  const { mode } = useUiMode();
+  return mode === "current" ? <CurrentDashboard /> : <LiquidGlassDashboard />;
+}
+
+function LiquidGlassDashboard() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
