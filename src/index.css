@@ -211,6 +211,24 @@
   html.liquid-glass .surface-2 {
     background: hsl(var(--surface-2) / 0.62);
   }
+  html.liquid-glass .bg-surface-2 {
+    background-color: hsl(var(--surface-2) / 0.66);
+  }
+  html.liquid-glass .bg-surface-3 {
+    background-color: hsl(var(--surface-3) / 0.72);
+  }
+  html.liquid-glass .rounded-md { border-radius: 16px; }
+  html.liquid-glass .rounded-lg { border-radius: 20px; }
+  html.liquid-glass .rounded-xl { border-radius: 24px; }
+  html.liquid-glass .border-border {
+    border-color: hsl(var(--border) / 0.84);
+  }
+  html.liquid-glass .bg-primary\/10 {
+    background-color: hsl(var(--primary) / 0.14);
+  }
+  html.liquid-glass .bg-primary\/15 {
+    background-color: hsl(var(--primary) / 0.19);
+  }
   .surface-2 {
     @apply bg-[hsl(var(--surface-2)/0.78)] border border-border/75 rounded-lg;
     backdrop-filter: blur(14px);
