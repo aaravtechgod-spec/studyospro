@@ -26,6 +26,15 @@ export function useTheme() {
   const theme: Theme = mode === "liquid-glass" ? glassTheme : profileTheme;
 
   useEffect(() => {
+    const syncGlassTheme = (event: Event) => {
+      const nextTheme = (event as CustomEvent<Theme>).detail;
+      if (nextTheme === "light" || nextTheme === "dark") setGlassTheme(nextTheme);
+    };
+    window.addEventListener("studyos:glass-theme-change", syncGlassTheme);
+    return () => window.removeEventListener("studyos:glass-theme-change", syncGlassTheme);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.classList.toggle("light", theme === "light");
     document.documentElement.classList.toggle("glass-dark", mode === "liquid-glass" && theme === "dark");
   }, [theme, mode]);
@@ -36,6 +45,7 @@ export function useTheme() {
       document.documentElement.classList.toggle("light", next === "light");
       if (mode === "liquid-glass") {
         setGlassTheme(next);
+        window.dispatchEvent(new CustomEvent<Theme>("studyos:glass-theme-change", { detail: next }));
         try { window.localStorage.setItem(GLASS_THEME_KEY, next); } catch { /* storage unavailable */ }
         return;
       }
