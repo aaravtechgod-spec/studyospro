@@ -2,11 +2,11 @@
 
 ## Completed
 9. **StudyOS Liquid Glass redesign** — applied the bright glass theme across existing screens, added responsive navigation and dashboard progress, and verified the persistent Current UI switch.
+8. **StudyOS clean glass redesign** — refreshed the shared navigation and Dashboard while preserving study workflows.
 6. **PWA installability** — manifest-only home-screen setup, StudyOS icons, and browser metadata verified; publish required for the live site.
 7. **Audience growth research** — reviewed 30-day analytics, live entry flow, SEO scan, and relevant student-study resources; recommendations saved for owner review.
 
 ## In progress
-8. **StudyOS clean glass redesign** — refine shared navigation and Dashboard with the approved dark glass direction; preserve existing study workflows. Completed.
 0. **Timer + stopwatch analytics accuracy** — record exact elapsed seconds and make saved sessions appear in Analytics. Completed.
 1. **Terms & Conditions page** — `/terms`, linked from Auth + Settings, sign-up agreement checkbox.
 2. **Career Tracks hub** — `/careers` with AI/ML, Software Engineering, Cybersecurity, Cloud, UI/UX roadmaps.
