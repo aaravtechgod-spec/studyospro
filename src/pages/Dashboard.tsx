@@ -93,7 +93,7 @@ function LiquidGlassDashboard() {
           <h1 className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">Welcome back, <span className="text-primary">{firstName}</span></h1>
           <p className="mt-2 text-sm text-muted-foreground">Keep going. Your next good study session starts here.</p>
         </div>
-        <Button asChild className="glass-control h-12 rounded-full px-5 shadow-lg shadow-primary/20 sm:w-auto">
+        <Button asChild className="h-12 rounded-full px-5 shadow-lg shadow-primary/25 sm:w-auto">
           <Link to="/timer"><Timer className="h-4 w-4" /> Start focus session <ArrowRight className="ml-1 h-4 w-4" /></Link>
         </Button>
       </section>
