@@ -179,16 +179,16 @@ function AppLayoutInner() {
 
       {/* Mobile top bar */}
       <header className={`glass-control lg:hidden fixed top-0 inset-x-0 z-30 h-14 bg-background/85 backdrop-blur-xl border-b border-border/70 flex items-center px-3 gap-2 ${mode === "liquid-glass" ? "border-x-0 border-t-0" : ""}`}>
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Open menu">
-              <Menu className="w-5 h-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className={`p-0 w-[260px] bg-surface border-border ${mode === "liquid-glass" ? "glass-sidebar" : ""}`}>
-            <MobileSidebarBody onNavigate={() => setMobileMenuOpen(false)} />
-          </SheetContent>
-        </Sheet>
+        {mode === "current" && <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Open menu">
+                <Menu className="w-5 h-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[260px] bg-surface border-border">
+              <MobileSidebarBody onNavigate={() => setMobileMenuOpen(false)} />
+            </SheetContent>
+          </Sheet>}
         <div className="font-display font-extrabold text-base">
           Study<span className="text-primary">OS</span>
         </div>
