@@ -1,5 +1,8 @@
 # Roadmap
 
+## In progress
+1. **Public landing page and guest preview** — public StudyOS welcome page, sign-in/account-creation entry points, and isolated sample-data demo at `/demo`.
+
 ## Completed
 9. **StudyOS Liquid Glass redesign** — applied the bright glass theme across existing screens, added responsive navigation and dashboard progress, and verified the persistent Current UI switch.
 8. **StudyOS clean glass redesign** — refreshed the shared navigation and Dashboard while preserving study workflows.
